@@ -1,0 +1,34 @@
+{
+  "name": "impressionist",
+  "author": "Henrik Ingo",
+  "license": "MIT",
+  "version": "0.1.0",
+  "description": "A visual editor for creating 3D impress.js presentations",
+  "homepage": "http://github.com/henrikingo/impressionist",
+  "main": "js/impressionist.js",
+  "repository" :
+    { "type" : "git",
+      "url" : "https://github.com/henrikingo/impressionist.git",
+      "github": "https://github.com/henrikingo/impressionist"
+    },
+  "keywords": [
+    "presentation",
+    "slides",
+    "slideshow",
+    "css3",
+    "3D",
+    "transforms",
+    "browser",
+    "GUI",
+    "editor"
+  ],
+  "bugs": {
+    "url": "https://github.com/henrikingo/impressionist/issues"
+  },
+  "scripts": {
+    "build": "node build.js"
+  },
+  "devDependencies": {
+    "buildify": "*"
+  }
+}

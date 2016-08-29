@@ -1,0 +1,17 @@
+/**
+ * CSS styles for Impressionist presentations editor
+ *
+ * Copyright 2016, Henrik Ingo (@henrikingo)
+ * MIT License
+ */
+ 
+/* Many impress.js presentations set pointer-events: none. We must turn them back on for our toolbar. */
+#impressionist-toolbar         {
+    pointer-events: auto;
+    opacity: 0.6;
+}
+
+#impressionist-toolbar input {
+    width: 3em;
+    font-size: 80%;
+}

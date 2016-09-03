@@ -15,6 +15,9 @@
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
+
+    // Helper functions to create 3D CSS3 transitions. These are 99% copy pasted from impress.js internals...
+    
     var toNumber = function (numeric, fallback) {
         return isNaN(numeric) ? (fallback || 0) : Number(numeric);
     };
@@ -31,7 +34,6 @@
         var rX = " rotateX(" + r.x + "deg) ",
             rY = " rotateY(" + r.y + "deg) ",
             rZ = " rotateZ(" + r.z + "deg) ";
-        
         return revert ? rZ+rY+rX : rX+rY+rZ;
     };
     
@@ -60,11 +62,38 @@
         }
         return el;
     };
+
+    var computeWindowScale = function ( config ) {
+        var hScale = window.innerHeight / config.height,
+            wScale = window.innerWidth / config.width,
+            scale = hScale > wScale ? wScale : hScale;
+        if (config.maxScale && scale > config.maxScale) {
+            scale = config.maxScale;
+        }
+        if (config.minScale && scale < config.minScale) {
+            scale = config.minScale;
+        }
+        return scale;
+    };
+    
+
+
+
+
+
+    // ... from here we have new code/functionality.
     
     // Get user input values and move/scale canvas accordingly
     var updateCanvasPosition = function() {
         var root = document.getElementById("impress");
-        var config = { perspective : toNumber( root.dataset.perspective, 1000 ) };
+        var rootData = root.dataset;
+        var config = {
+                width: toNumber( rootData.width, 1024 ),
+                height: toNumber( rootData.height, 768 ),
+                maxScale: toNumber( rootData.maxScale, 1 ),
+                minScale: toNumber( rootData.minScale, 0 ),
+                perspective: toNumber( rootData.perspective, 1000 )
+        };
         var canvas = root.firstChild;
         var activeStep = document.querySelector("div#impress div.step.active");
         var stepData = activeStep.dataset;
@@ -83,10 +112,14 @@
             },
             scale: 1 / coordinates.scale
         };
+
+        var windowScale = computeWindowScale(config);
+        var targetScale = target.scale * windowScale;
+
         css(root, {
             // to keep the perspective look similar for different scales
             // we need to 'scale' the perspective, too
-            transform: perspective( config.perspective / target.scale ) + scale( target.scale ),
+            transform: perspective( config.perspective / targetScale ) + scale( targetScale ),
             transitionDuration: "0ms",
             transitionDelay: "0ms"
         });
@@ -112,14 +145,14 @@
         return tempDiv.firstChild;
     };
 
-    var addNavigationControls = function() {
+    var addCameraControls = function() {
         var x = makeDomElement( '<span>x: <input id="impressionist-zoom-x" type="text" /> </span>' );
         var y = makeDomElement( '<span>y: <input id="impressionist-zoom-y" type="text" /> </span>' );
         var z = makeDomElement( '<span>z: <input id="impressionist-zoom-z" type="text" /> </span>' );
         var scale = makeDomElement( '<span>scale: <input id="impressionist-zoom-scale" type="text" /> </span>' );
-        var rotateX = makeDomElement( '<span>rotate-x: <input id="impressionist-zoom-rotate-x" type="text" /> </span>' );
-        var rotateY = makeDomElement( '<span>rotate-y: <input id="impressionist-zoom-rotate-y" type="text" /> </span>' );
-        var rotateZ = makeDomElement( '<span>rotate-z: <input id="impressionist-zoom-rotate-z" type="text" /> </span>' );
+        var rotateX = makeDomElement( '<span>rotate: x: <input id="impressionist-zoom-rotate-x" type="text" /> </span>' );
+        var rotateY = makeDomElement( '<span>y: <input id="impressionist-zoom-rotate-y" type="text" /> </span>' );
+        var rotateZ = makeDomElement( '<span>z: <input id="impressionist-zoom-rotate-z" type="text" /> </span>' );
 
         triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : x } );
         triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : y } );
@@ -197,11 +230,27 @@
         widgets.rotateZ.value = coordinates.rotate.z;
     };
 
+    // API for other plugins to move the camera position ///////////////////////////////////////////
+    
+    document.addEventListener("impressionist:camera:setCoordinates", function (event) {
+        var moveTo = event.detail;
+        coordinates.translate.x = toNumber(moveTo.x, coordinates.translate.x);
+        coordinates.translate.y = toNumber(moveTo.y, coordinates.translate.y);
+        coordinates.translate.z = toNumber(moveTo.z, coordinates.translate.z);
+        coordinates.scale       = toNumber(moveTo.scale, coordinates.scale);
+        coordinates.rotate.x = toNumber(moveTo.rotateX, coordinates.rotate.x);
+        coordinates.rotate.y = toNumber(moveTo.rotateY, coordinates.rotate.y);
+        coordinates.rotate.z = toNumber(moveTo.rotateZ, coordinates.rotate.z);
+        updateWidgets();
+        updateCanvasPosition();
+    }, false);
+
     // impress.js events ///////////////////////////////////////////////////////////////////////////
     
     document.addEventListener("impress:init", function (event) {
         toolbar = document.getElementById("impressionist-toolbar");
-        addNavigationControls( event );
+        addCameraControls( event );
+        triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
     }, false);
     
     // If user moves to another step with impress().prev() / .next() or .goto(), then the canvas

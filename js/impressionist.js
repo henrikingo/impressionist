@@ -63,6 +63,9 @@
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
+
+    // Helper functions to create 3D CSS3 transitions. These are 99% copy pasted from impress.js internals...
+    
     var toNumber = function (numeric, fallback) {
         return isNaN(numeric) ? (fallback || 0) : Number(numeric);
     };
@@ -79,7 +82,6 @@
         var rX = " rotateX(" + r.x + "deg) ",
             rY = " rotateY(" + r.y + "deg) ",
             rZ = " rotateZ(" + r.z + "deg) ";
-        
         return revert ? rZ+rY+rX : rX+rY+rZ;
     };
     
@@ -108,11 +110,38 @@
         }
         return el;
     };
+
+    var computeWindowScale = function ( config ) {
+        var hScale = window.innerHeight / config.height,
+            wScale = window.innerWidth / config.width,
+            scale = hScale > wScale ? wScale : hScale;
+        if (config.maxScale && scale > config.maxScale) {
+            scale = config.maxScale;
+        }
+        if (config.minScale && scale < config.minScale) {
+            scale = config.minScale;
+        }
+        return scale;
+    };
+    
+
+
+
+
+
+    // ... from here we have new code/functionality.
     
     // Get user input values and move/scale canvas accordingly
     var updateCanvasPosition = function() {
         var root = document.getElementById("impress");
-        var config = { perspective : toNumber( root.dataset.perspective, 1000 ) };
+        var rootData = root.dataset;
+        var config = {
+                width: toNumber( rootData.width, 1024 ),
+                height: toNumber( rootData.height, 768 ),
+                maxScale: toNumber( rootData.maxScale, 1 ),
+                minScale: toNumber( rootData.minScale, 0 ),
+                perspective: toNumber( rootData.perspective, 1000 )
+        };
         var canvas = root.firstChild;
         var activeStep = document.querySelector("div#impress div.step.active");
         var stepData = activeStep.dataset;
@@ -131,10 +160,14 @@
             },
             scale: 1 / coordinates.scale
         };
+
+        var windowScale = computeWindowScale(config);
+        var targetScale = target.scale * windowScale;
+
         css(root, {
             // to keep the perspective look similar for different scales
             // we need to 'scale' the perspective, too
-            transform: perspective( config.perspective / target.scale ) + scale( target.scale ),
+            transform: perspective( config.perspective / targetScale ) + scale( targetScale ),
             transitionDuration: "0ms",
             transitionDelay: "0ms"
         });
@@ -160,14 +193,14 @@
         return tempDiv.firstChild;
     };
 
-    var addNavigationControls = function() {
+    var addCameraControls = function() {
         var x = makeDomElement( '<span>x: <input id="impressionist-zoom-x" type="text" /> </span>' );
         var y = makeDomElement( '<span>y: <input id="impressionist-zoom-y" type="text" /> </span>' );
         var z = makeDomElement( '<span>z: <input id="impressionist-zoom-z" type="text" /> </span>' );
         var scale = makeDomElement( '<span>scale: <input id="impressionist-zoom-scale" type="text" /> </span>' );
-        var rotateX = makeDomElement( '<span>rotate-x: <input id="impressionist-zoom-rotate-x" type="text" /> </span>' );
-        var rotateY = makeDomElement( '<span>rotate-y: <input id="impressionist-zoom-rotate-y" type="text" /> </span>' );
-        var rotateZ = makeDomElement( '<span>rotate-z: <input id="impressionist-zoom-rotate-z" type="text" /> </span>' );
+        var rotateX = makeDomElement( '<span>rotate: x: <input id="impressionist-zoom-rotate-x" type="text" /> </span>' );
+        var rotateY = makeDomElement( '<span>y: <input id="impressionist-zoom-rotate-y" type="text" /> </span>' );
+        var rotateZ = makeDomElement( '<span>z: <input id="impressionist-zoom-rotate-z" type="text" /> </span>' );
 
         triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : x } );
         triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : y } );
@@ -245,11 +278,27 @@
         widgets.rotateZ.value = coordinates.rotate.z;
     };
 
+    // API for other plugins to move the camera position ///////////////////////////////////////////
+    
+    document.addEventListener("impressionist:camera:setCoordinates", function (event) {
+        var moveTo = event.detail;
+        coordinates.translate.x = toNumber(moveTo.x, coordinates.translate.x);
+        coordinates.translate.y = toNumber(moveTo.y, coordinates.translate.y);
+        coordinates.translate.z = toNumber(moveTo.z, coordinates.translate.z);
+        coordinates.scale       = toNumber(moveTo.scale, coordinates.scale);
+        coordinates.rotate.x = toNumber(moveTo.rotateX, coordinates.rotate.x);
+        coordinates.rotate.y = toNumber(moveTo.rotateY, coordinates.rotate.y);
+        coordinates.rotate.z = toNumber(moveTo.rotateZ, coordinates.rotate.z);
+        updateWidgets();
+        updateCanvasPosition();
+    }, false);
+
     // impress.js events ///////////////////////////////////////////////////////////////////////////
     
     document.addEventListener("impress:init", function (event) {
         toolbar = document.getElementById("impressionist-toolbar");
-        addNavigationControls( event );
+        addCameraControls( event );
+        triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
     }, false);
     
     // If user moves to another step with impress().prev() / .next() or .goto(), then the canvas
@@ -268,6 +317,178 @@
             getActiveStepCoordinates(activeStep);
             updateWidgets();
         }, 1000 );
+    }, false);
+    
+})(document, window);
+
+
+/**
+ * Camera-controls plugin
+ *
+ * Buttons to navigate the camera
+ *
+ * Copyright 2016 Henrik Ingo (@henrikingo)
+ * Released under the MIT license.
+ */
+(function ( document, window ) {
+    'use strict';
+    var toolbar;
+    var cameraCoordinates;
+    var myWidgets = {};
+
+    // Functions for zooming and panning the canvas //////////////////////////////////////////////
+
+    // Create widgets and add them to the impressionist toolbar //////////////////////////////////
+    var toNumber = function (numeric, fallback) {
+        return isNaN(numeric) ? (fallback || 0) : Number(numeric);
+    };
+
+    var triggerEvent = function (el, eventName, detail) {
+        var event = document.createEvent("CustomEvent");
+        event.initCustomEvent(eventName, true, true, detail);
+        el.dispatchEvent(event);
+    };
+
+    var makeDomElement = function ( html ) {
+        var tempDiv = document.createElement("div");
+        tempDiv.innerHTML = html;
+        return tempDiv.firstChild;
+    };
+
+    var addCameraControls = function() {
+        myWidgets.xy = makeDomElement( '<button id="impressionist-cameracontrols-xy" title="Pan camera left-right, up-down">+</button>' );
+        myWidgets.z  = makeDomElement( '<button id="impressionist-cameracontrols-z" title="Zoom in-out = up-down, rotate = left-right">Z</button>' );
+        myWidgets.rotateXY = makeDomElement( '<button id="impressionist-cameracontrols-rotate" title="Rotate camera left-right, up-down">O</button>' );
+
+        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.xy } );
+        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.z } );
+        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.rotateXY } );
+
+        var initDrag = function(event) {
+            var drag = {};
+            drag.start = {};
+            drag.start.x = event.clientX;
+            drag.start.y = event.clientY;
+            drag.current = {};
+            drag.current.x = event.clientX;
+            drag.current.y = event.clientY;
+            return drag;
+        };
+        var stopDrag = function() {
+            myWidgets.xy.drag = false;
+            myWidgets.z.drag = false;
+            myWidgets.rotateXY.drag = false;
+        };
+        
+        myWidgets.xy.addEventListener( "mousedown", function( event ) {
+            myWidgets.xy.drag = initDrag(event);
+            updateCameraCoordinatesFiber(); // start fiber
+        });
+        myWidgets.z.addEventListener( "mousedown", function( event ) {
+            myWidgets.z.drag = initDrag(event);
+            updateCameraCoordinatesFiber(); // start fiber
+        });
+        myWidgets.rotateXY.addEventListener( "mousedown", function( event ) {
+            myWidgets.rotateXY.drag = initDrag(event);
+            updateCameraCoordinatesFiber(); // start fiber
+        });
+        
+        document.addEventListener( "mouseup", function( event ) {
+            stopDrag();
+        });
+        document.addEventListener( "mouseleave", function( event ) {
+            stopDrag();
+        });
+        
+        document.addEventListener( "mousemove", function( event ) {
+            if( myWidgets.xy.drag ) {
+                myWidgets.xy.drag.current.x = event.clientX;
+                myWidgets.xy.drag.current.y = event.clientY;
+            }
+            if( myWidgets.z.drag ) {
+                myWidgets.z.drag.current.x = event.clientX;
+                myWidgets.z.drag.current.y = event.clientY;
+            }
+            if( myWidgets.rotateXY.drag ) {
+                myWidgets.rotateXY.drag.current.x = event.clientX;
+                myWidgets.rotateXY.drag.current.y = event.clientY;
+            }
+        });
+        
+        var updateCameraCoordinatesFiber = function(){
+            var diff = { x:0, y:0, z:0, rotateX:0, rotateY:0, rotateZ:0 };
+            var isDragging = false;
+            if( myWidgets.xy.drag ) {
+                diff.x = myWidgets.xy.drag.current.x - myWidgets.xy.drag.start.x;
+                diff.y = myWidgets.xy.drag.current.y - myWidgets.xy.drag.start.y;
+                isDragging = true;
+            }
+            if( myWidgets.z.drag ) {
+                diff.z = myWidgets.z.drag.current.y - myWidgets.z.drag.start.y;
+                diff.rotateZ = myWidgets.z.drag.current.x - myWidgets.z.drag.start.x;
+                isDragging = true;
+            }
+            if( myWidgets.rotateXY.drag ) {
+                diff.rotateX = myWidgets.rotateXY.drag.current.y - myWidgets.rotateXY.drag.start.y;
+                diff.rotateY = myWidgets.rotateXY.drag.current.x - myWidgets.rotateXY.drag.start.x;
+                isDragging = true;
+            }
+
+            if( isDragging ) {
+                diff = snapToGrid(diff);
+                var moveTo = {};
+                var scale = toNumber(cameraCoordinates.scale.value, 1);
+                moveTo.x = Number(cameraCoordinates.x.value) + diff.x * scale;
+                moveTo.y = Number(cameraCoordinates.y.value) + diff.y * scale;
+                moveTo.z = Number(cameraCoordinates.z.value) + diff.z * scale;
+                moveTo.scale = Number(cameraCoordinates.scale.value) + diff.scale;
+                moveTo.rotateX = Number(cameraCoordinates.rotateX.value) + diff.rotateX/10;
+                moveTo.rotateY = Number(cameraCoordinates.rotateY.value) - diff.rotateY/10;
+                moveTo.rotateZ = Number(cameraCoordinates.rotateZ.value) - diff.rotateZ/10;
+                triggerEvent(toolbar, "impressionist:camera:setCoordinates", moveTo );
+                setTimeout( updateCameraCoordinatesFiber, 100 );
+            }
+        };
+        
+        // Ignore small values in diff values.
+        // For example, if the movement is 88 degrees in some direction, this should correct it to 
+        // 90 degrees. Helper for updateCameraCoordinatesFiber().
+        var snapToGrid = function(diff) {
+            // To start, simply ignore any values < 5 pixels.
+            // This creates 
+            // - a 10x10 px square whithin which there won't be any movement
+            // - outside of that, 10 px corridoors in each 90 degree direction, 
+            //   within which small deviations from 90 degree angles are ignored.
+            for( var k in diff ) {
+                diff[k] = Math.abs(diff[k]) > 5 ? diff[k] : 0;
+            }
+            // For the z widget, attach it to full 90 degrees in the closest direction.
+            // This means you can only zoom or rotate, not both at the same time.
+            // Once a direction is chosen, lock that until dragStop() event.
+            console.log(myWidgets.z.drag);
+            if( myWidgets.z.drag && myWidgets.z.drag.setzero ) {
+                diff[myWidgets.z.drag.setzero] = 0;
+            }
+            else {
+                if( Math.abs(diff.z) > Math.abs(diff.rotateZ) ) {
+                    diff.rotateZ = 0;
+                    myWidgets.z.drag.setzero = "rotateZ";
+                }
+                else if ( Math.abs(diff.z) < Math.abs(diff.rotateZ) ) {
+                    diff.z = 0;
+                    myWidgets.z.drag.setzero = "z";
+                }
+            }
+            return diff;
+        };
+    };
+    
+    // Wait for camera plugin to initialize first
+    
+    document.addEventListener("impressionist:camera:init", function (event) {
+        cameraCoordinates = event.detail.widgets;
+        toolbar = document.getElementById("impressionist-toolbar");
+        addCameraControls();
     }, false);
     
 })(document, window);

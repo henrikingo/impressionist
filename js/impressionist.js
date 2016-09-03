@@ -59,6 +59,7 @@
     var toolbar;
     var coordinates = {rotate:{x:0,y:0,z:0},translate:{x:0,y:0,z:0},scale:1};
     var widgets = {};
+    var widgetNames = ['x', 'y', 'z', 'rotateX', 'rotateY', 'rotateZ', 'scale'];
     var activeStep;
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
@@ -193,58 +194,72 @@
         return tempDiv.firstChild;
     };
 
+    // Helper function to set the right path in `coordinates` object, given a name from widgetNames
+    var setCoordinate = function( name, value ) {
+        if ( name.length == 1 ) { // x, y, z
+            coordinates.translate[name] = value;
+        }
+        else if ( name == "scale" ) {
+            coordinates.scale = value;
+        }
+        else {
+            var xyz = name.substr(-1).toLowerCase();
+            coordinates.rotate[xyz] = value;
+        }
+    };
+    // Helper function to get the right path in `coordinates` object, given a name from widgetNames
+    var getCoordinate = function( name ) {
+        if ( name.length == 1 ) { // x, y, z
+            return coordinates.translate[name];
+        }
+        else if ( name == "scale" ) {
+            return coordinates.scale;
+        }
+        else {
+            var xyz = name.substr(-1).toLowerCase();
+            return coordinates.rotate[xyz];
+        }
+    };
+
+    // Set event listeners for widgets.x.input/plus/minus widgets.
+    var setListeners = function( widgets, name ){
+        widgets[name].input.addEventListener( "input", function( event ) {
+            setCoordinate( name, toNumber( event.target.value, name=="scale"?1:0 ) );
+            updateCanvasPosition();
+        });
+        widgets[name].minus.addEventListener( "click", function( event ) {
+            setCoordinate( name, Math.round(getCoordinate(name)-1) );
+            // But scale cannot be < 1
+            if( name == "scale" && getCoordinate( name ) < 1 )
+                setCoordinate( name, 1 );
+            updateWidgets();
+            updateCanvasPosition();
+        });
+        widgets[name].plus.addEventListener( "click", function( event ) {
+            setCoordinate( name, Math.round(getCoordinate(name)+1) );
+            updateWidgets();
+            updateCanvasPosition();
+        });
+    };
+
     var addCameraControls = function() {
-        var x = makeDomElement( '<span>x: <input id="impressionist-zoom-x" type="text" /> </span>' );
-        var y = makeDomElement( '<span>y: <input id="impressionist-zoom-y" type="text" /> </span>' );
-        var z = makeDomElement( '<span>z: <input id="impressionist-zoom-z" type="text" /> </span>' );
-        var scale = makeDomElement( '<span>scale: <input id="impressionist-zoom-scale" type="text" /> </span>' );
-        var rotateX = makeDomElement( '<span>rotate: x: <input id="impressionist-zoom-rotate-x" type="text" /> </span>' );
-        var rotateY = makeDomElement( '<span>y: <input id="impressionist-zoom-rotate-y" type="text" /> </span>' );
-        var rotateZ = makeDomElement( '<span>z: <input id="impressionist-zoom-rotate-z" type="text" /> </span>' );
-
-        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : x } );
-        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : y } );
-        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : z } );
-        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : scale } );
-        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : rotateX } );
-        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : rotateY } );
-        triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : rotateZ } );
-
-        widgets.x = x.firstElementChild;
-        widgets.y = y.firstElementChild;
-        widgets.z = z.firstElementChild;
-        widgets.scale = scale.firstElementChild;
-        widgets.rotateX = rotateX.firstElementChild;
-        widgets.rotateY = rotateY.firstElementChild;
-        widgets.rotateZ = rotateZ.firstElementChild;
-        
-        widgets.x.addEventListener( "input", function( event ) {
-            coordinates.translate.x = toNumber( event.target.value);
-            updateCanvasPosition();
-        });
-        widgets.y.addEventListener( "input", function( event ) {
-            coordinates.translate.y = toNumber( event.target.value);
-            updateCanvasPosition();
-        });
-        widgets.z.addEventListener( "input", function( event ) {
-            coordinates.translate.z = toNumber( event.target.value);
-            updateCanvasPosition();
-        });
-        widgets.scale.addEventListener( "input", function( event ) {
-            coordinates.scale = toNumber( event.target.value, 1);
-            updateCanvasPosition();
-        });
-        widgets.rotateX.addEventListener( "input", function( event ) {
-            coordinates.rotate.x = toNumber( event.target.value);
-            updateCanvasPosition();
-        });
-        widgets.rotateY.addEventListener( "input", function( event ) {
-            coordinates.rotate.y = toNumber( event.target.value);
-            updateCanvasPosition();
-        });
-        widgets.rotateZ.addEventListener( "input", function( event ) {
-            coordinates.rotate.z = toNumber( event.target.value);
-            updateCanvasPosition();
+        widgetNames.forEach( function(name){
+            var r = name == "rotateX" ? "rotate: " : "";
+            var label = name.substr(0,6)=="rotate" ? name.substr(-1).toLowerCase() : name;
+            var element = makeDomElement( '<span>' + r + label + 
+                                          ':<input id="impressionist-camera-' + name + 
+                                          '" class="impressionist-camera impressionist-camera-input" type="text" />' +
+                                          '<button id="impressionist-camera-' + name + '-minus" ' +
+                                          'class="impressionist-camera impressionist-camera-minus">-</button>' + 
+                                          '<button id="impressionist-camera-' + name + '-plus" ' +
+                                          'class="impressionist-camera impressionist-camera-plus">+</button> </span>' );
+            triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : element } );
+            
+            var input = element.firstElementChild;
+            var minus = input.nextSibling;
+            var plus  = minus.nextSibling;
+            widgets[name] = { minus : minus, input : input, plus : plus };
+            setListeners( widgets, name );
         });
     };
     
@@ -269,26 +284,18 @@
     };
 
     var updateWidgets = function() {
-        widgets.x.value = coordinates.translate.x;
-        widgets.y.value = coordinates.translate.y;
-        widgets.z.value = coordinates.translate.z;
-        widgets.scale.value = coordinates.scale;
-        widgets.rotateX.value = coordinates.rotate.x;
-        widgets.rotateY.value = coordinates.rotate.y;
-        widgets.rotateZ.value = coordinates.rotate.z;
+        widgetNames.forEach( function( name ) {
+            widgets[name].input.value = getCoordinate(name);
+        });
     };
 
     // API for other plugins to move the camera position ///////////////////////////////////////////
     
     document.addEventListener("impressionist:camera:setCoordinates", function (event) {
         var moveTo = event.detail;
-        coordinates.translate.x = toNumber(moveTo.x, coordinates.translate.x);
-        coordinates.translate.y = toNumber(moveTo.y, coordinates.translate.y);
-        coordinates.translate.z = toNumber(moveTo.z, coordinates.translate.z);
-        coordinates.scale       = toNumber(moveTo.scale, coordinates.scale);
-        coordinates.rotate.x = toNumber(moveTo.rotateX, coordinates.rotate.x);
-        coordinates.rotate.y = toNumber(moveTo.rotateY, coordinates.rotate.y);
-        coordinates.rotate.z = toNumber(moveTo.rotateZ, coordinates.rotate.z);
+        widgetNames.forEach( function( name ) {
+            setCoordinate( name, toNumber( moveTo[name], getCoordinate(name) ) );
+        });
         updateWidgets();
         updateCanvasPosition();
     }, false);
@@ -437,14 +444,14 @@
             if( isDragging ) {
                 diff = snapToGrid(diff);
                 var moveTo = {};
-                var scale = toNumber(cameraCoordinates.scale.value, 1);
-                moveTo.x = Number(cameraCoordinates.x.value) + diff.x * scale;
-                moveTo.y = Number(cameraCoordinates.y.value) + diff.y * scale;
-                moveTo.z = Number(cameraCoordinates.z.value) + diff.z * scale;
-                moveTo.scale = Number(cameraCoordinates.scale.value) + diff.scale;
-                moveTo.rotateX = Number(cameraCoordinates.rotateX.value) + diff.rotateX/10;
-                moveTo.rotateY = Number(cameraCoordinates.rotateY.value) - diff.rotateY/10;
-                moveTo.rotateZ = Number(cameraCoordinates.rotateZ.value) - diff.rotateZ/10;
+                var scale = toNumber(cameraCoordinates.scale.input.value, 1);
+                moveTo.x = Number(cameraCoordinates.x.input.value) + diff.x * scale;
+                moveTo.y = Number(cameraCoordinates.y.input.value) + diff.y * scale;
+                moveTo.z = Number(cameraCoordinates.z.input.value) + diff.z * scale;
+                moveTo.scale = Number(cameraCoordinates.scale.input.value) + diff.scale;
+                moveTo.rotateX = Number(cameraCoordinates.rotateX.input.value) + diff.rotateX/10;
+                moveTo.rotateY = Number(cameraCoordinates.rotateY.input.value) - diff.rotateY/10;
+                moveTo.rotateZ = Number(cameraCoordinates.rotateZ.input.value) - diff.rotateZ/10;
                 triggerEvent(toolbar, "impressionist:camera:setCoordinates", moveTo );
                 setTimeout( updateCameraCoordinatesFiber, 100 );
             }
@@ -465,7 +472,6 @@
             // For the z widget, attach it to full 90 degrees in the closest direction.
             // This means you can only zoom or rotate, not both at the same time.
             // Once a direction is chosen, lock that until dragStop() event.
-            console.log(myWidgets.z.drag);
             if( myWidgets.z.drag && myWidgets.z.drag.setzero ) {
                 diff[myWidgets.z.drag.setzero] = 0;
             }

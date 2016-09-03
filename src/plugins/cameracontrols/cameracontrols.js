@@ -113,14 +113,14 @@
             if( isDragging ) {
                 diff = snapToGrid(diff);
                 var moveTo = {};
-                var scale = toNumber(cameraCoordinates.scale.value, 1);
-                moveTo.x = Number(cameraCoordinates.x.value) + diff.x * scale;
-                moveTo.y = Number(cameraCoordinates.y.value) + diff.y * scale;
-                moveTo.z = Number(cameraCoordinates.z.value) + diff.z * scale;
-                moveTo.scale = Number(cameraCoordinates.scale.value) + diff.scale;
-                moveTo.rotateX = Number(cameraCoordinates.rotateX.value) + diff.rotateX/10;
-                moveTo.rotateY = Number(cameraCoordinates.rotateY.value) - diff.rotateY/10;
-                moveTo.rotateZ = Number(cameraCoordinates.rotateZ.value) - diff.rotateZ/10;
+                var scale = toNumber(cameraCoordinates.scale.input.value, 1);
+                moveTo.x = Number(cameraCoordinates.x.input.value) + diff.x * scale;
+                moveTo.y = Number(cameraCoordinates.y.input.value) + diff.y * scale;
+                moveTo.z = Number(cameraCoordinates.z.input.value) + diff.z * scale;
+                moveTo.scale = Number(cameraCoordinates.scale.input.value) + diff.scale;
+                moveTo.rotateX = Number(cameraCoordinates.rotateX.input.value) + diff.rotateX/10;
+                moveTo.rotateY = Number(cameraCoordinates.rotateY.input.value) - diff.rotateY/10;
+                moveTo.rotateZ = Number(cameraCoordinates.rotateZ.input.value) - diff.rotateZ/10;
                 triggerEvent(toolbar, "impressionist:camera:setCoordinates", moveTo );
                 setTimeout( updateCameraCoordinatesFiber, 100 );
             }

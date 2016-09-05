@@ -443,6 +443,7 @@
 
             if( isDragging ) {
                 diff = snapToGrid(diff);
+                diff = coordinateTransformation(diff);
                 var moveTo = {};
                 var scale = toNumber(cameraCoordinates.scale.input.value, 1);
                 moveTo.x = Number(cameraCoordinates.x.input.value) + diff.x * scale;
@@ -496,6 +497,71 @@
         toolbar = document.getElementById("impressionist-toolbar");
         addCameraControls();
     }, false);
+
+
+
+    // 3d coordinate transformations
+    //
+    // Without this, the controls work, but they will just modify the camera
+    // window coordinates directly. If the camera was rotated, this no longer makes
+    // sense. For example, setting rotate: z: to 180, would turn everything
+    // upside down. Now, if you pull the "+" (xy) control up, you will
+    // actually see the camera panning down.
+    //
+    // It's time for some serious math, so I've hid these here at the end.
+    // We want the controls to move the camera relative to the current viewport/camera position,
+    // not the origin of the xyz coordinates. These functions modify the diff object so that
+    // the movements are according to current viewport.
+    
+    var coordinateTransformation = function(diff){
+        var deg = function(rad) {
+          return rad * (180 / Math.PI);
+        };
+
+        var rad = function(deg) {
+          return deg * (Math.PI / 180);
+        };
+        
+        var newDiff = {};
+
+        var rotateX = toNumber( cameraCoordinates.rotateX.input.value );
+        var rotateY = toNumber( cameraCoordinates.rotateY.input.value );
+        var rotateZ = toNumber( cameraCoordinates.rotateZ.input.value );
+
+        // Based on http://www.math.tau.ac.il/~dcor/Graphics/cg-slides/geom3d.pdf but omitting the use of matrix calculus.
+        // I get quite nauseous by this level of math, so basically the below was done by a combination of
+        // cargo culting and trial-and error. If you're a real mathematician and are reading this thinking that there's
+        // a shorter and more elegant equivalent form to these formulas, then by all means tell me. (henrik.ingo@avoinelama.fi).
+        newDiff.x = diff.x * Math.cos( rad(rotateZ) ) * Math.cos( rad(rotateY) )
+                  - diff.y * Math.sin( rad(rotateZ) ) * Math.cos( rad(rotateY) )
+                  + diff.z * Math.sin( rad(rotateY) );
+
+        newDiff.y = diff.y * ( Math.cos( rad(rotateZ) ) * Math.cos( rad(rotateX) ) 
+                             - Math.sin( rad(rotateX) ) * Math.sin( rad(rotateY) ) * Math.sin( rad(rotateZ) ) )
+                  + diff.x * ( Math.sin( rad(rotateZ) ) * Math.cos( rad(rotateX) ) 
+                             + Math.sin( rad(rotateY) ) * Math.sin( rad(rotateX) ) * Math.cos( rad(rotateZ) ) )
+                  - diff.z *   Math.sin( rad(rotateX) ) * Math.cos( rad(rotateY) );
+
+        newDiff.z = diff.z *   Math.cos( rad(rotateX) ) * Math.cos( rad(rotateY) )
+                  + diff.y * ( Math.sin( rad(rotateY) ) * Math.sin( rad(rotateZ) ) * Math.cos( rad(rotateX) )
+                             + Math.sin( rad(rotateX) ) * Math.cos( rad(rotateZ) ) )
+                  + diff.x * ( Math.sin( rad(rotateZ) ) * Math.sin( rad(rotateX) ) 
+                             - Math.sin( rad(rotateY) ) * Math.cos( rad(rotateZ) ) * Math.cos( rad(rotateX) ) );
+
+        newDiff.rotateX = diff.rotateX;
+        newDiff.rotateY = diff.rotateY;
+        newDiff.rotateZ = diff.rotateZ;
+        newDiff.scale = diff.scale;
+        return newDiff;
+    };
+    
+
+
+
+
+
+
+
     
 })(document, window);
 

@@ -9,9 +9,9 @@
 (function ( document, window ) {
     'use strict';
     var toolbar;
-    var coordinates = {rotate:{x:0,y:0,z:0},translate:{x:0,y:0,z:0},scale:1};
+    var coordinates = {rotate:{x:0,y:0,z:0},translate:{x:0,y:0,z:0,order:"xyz"},scale:1};
     var widgets = {};
-    var widgetNames = ['x', 'y', 'z', 'rotateX', 'rotateY', 'rotateZ', 'scale'];
+    var widgetNames = ['x', 'y', 'z', 'scale', 'rotateX', 'rotateY', 'rotateZ', 'order'];
     var activeStep;
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
@@ -32,10 +32,17 @@
     // By default the rotations are in X Y Z order that can be reverted by passing `true`
     // as second parameter.
     var rotate = function ( r, revert ) {
-        var rX = " rotateX(" + r.x + "deg) ",
-            rY = " rotateY(" + r.y + "deg) ",
-            rZ = " rotateZ(" + r.z + "deg) ";
-        return revert ? rZ+rY+rX : rX+rY+rZ;
+        var order = r.order ? r.order : "xyz";
+        var css = "";
+        var axes = order.split("");
+        if ( revert ) {
+            axes = axes.reverse();
+        }
+
+        for ( var i in axes ) {
+            css += " rotate" + axes[i].toUpperCase() + "(" + r[axes[i]] + "deg)"
+        }
+        return css;
     };
     
     // `scale` builds a scale transform string for given data.
@@ -104,7 +111,8 @@
             rotate: {
                 x: -coordinates.rotate.x,
                 y: -coordinates.rotate.y,
-                z: -coordinates.rotate.z
+                z: -coordinates.rotate.z,
+                order: coordinates.rotate.order
             },
             translate: {
                 x: -coordinates.translate.x,
@@ -124,7 +132,6 @@
             transitionDuration: "0ms",
             transitionDelay: "0ms"
         });
-        
         css(canvas, {
             transform: rotate(target.rotate, true) + translate(target.translate),
             transitionDuration: "0ms",
@@ -154,6 +161,9 @@
         else if ( name == "scale" ) {
             coordinates.scale = value;
         }
+        else if ( name == "order" ) {
+            coordinates.rotate.order = value;
+        }
         else {
             var xyz = name.substr(-1).toLowerCase();
             coordinates.rotate[xyz] = value;
@@ -167,6 +177,9 @@
         else if ( name == "scale" ) {
             return coordinates.scale;
         }
+        else if ( name == "order" ) {
+            return coordinates.rotate.order;
+        }
         else {
             var xyz = name.substr(-1).toLowerCase();
             return coordinates.rotate[xyz];
@@ -175,6 +188,8 @@
 
     // Set event listeners for widgets.x.input/plus/minus widgets.
     var setListeners = function( widgets, name ){
+        if (name == "order") return; // The last widget is non-numeric, separate listeners set explicitly.
+
         widgets[name].input.addEventListener( "input", function( event ) {
             setCoordinate( name, toNumber( event.target.value, name=="scale"?1:0 ) );
             updateCanvasPosition();
@@ -213,6 +228,59 @@
             widgets[name] = { minus : minus, input : input, plus : plus };
             setListeners( widgets, name );
         });
+        // order widget has its own listeners, as it's not a numeric field
+        var name = "order";
+        widgets[name].input.addEventListener( "input", function( event ) {
+            var v = event.target.value.toString().toLowerCase();
+            var value = "";
+            for (var i = 0; i < Math.min(v.length, 3); i++){
+                if( v[i] != "x" && v[i] != "y" && v[i] != "z" ){
+                    continue;
+                }
+                value += v[i];
+            }
+            event.target.value = value;
+            setCoordinate( name, value );
+            updateCanvasPosition();
+        });
+        widgets[name].minus.addEventListener( "click", function( event ) {
+            var current = getCoordinate(name);
+            var value = "";
+            if( current.length < 3 ) {
+                var available = "xyz";
+                for( var i=0; i < current.length; i++ ) {
+                    // Remove the letters already in the text field from available
+                    available = available.split(current[i]).join("");
+                }
+                value = current + available[0];
+            }
+            else {
+                // shift the order string so that 1st letter becomes last, second first, third second.
+                value = current[1] + current[2] + current[0];
+            }
+            setCoordinate( name, value );
+            updateWidgets();
+            updateCanvasPosition();
+        });
+        widgets[name].plus.addEventListener( "click", function( event ) {
+            var current = getCoordinate(name);
+            var value = "";
+            if( current.length < 3 ) {
+                var available = "xyz";
+                for( var i=0; i < current.length; i++ ) {
+                    // Remove the letters already in the text field from available
+                    available = available.split(current[i]).join("");
+                }
+                value = available[0] + current;
+            }
+            else {
+                // shift the order string so that 1st letter becomes last, second first, third second.
+                value =  current[2] + current[0] + current[1];
+            }
+            setCoordinate( name, value );
+            updateWidgets();
+            updateCanvasPosition();
+        });
     };
     
     // Update the coordinates object from the currently activeStep.
@@ -224,7 +292,8 @@
             rotate: {
                 x: toNumber(stepData.rotateX),
                 y: toNumber(stepData.rotateY),
-                z: toNumber(stepData.rotateZ, toNumber(stepData.rotate))
+                z: toNumber(stepData.rotateZ, toNumber(stepData.rotate)),
+                order: "xyz" // TODO: Not supported in impress.js yet, so all existing steps have this order for now
             },
             translate: {
                 x: toNumber(stepData.x),
@@ -246,7 +315,14 @@
     document.addEventListener("impressionist:camera:setCoordinates", function (event) {
         var moveTo = event.detail;
         widgetNames.forEach( function( name ) {
-            setCoordinate( name, toNumber( moveTo[name], getCoordinate(name) ) );
+            if ( moveTo[name] === undefined ) return; // continue, but in JS forEach is a function
+            if ( name == "order" ) {
+                // TODO: Could do input sanitization here, but for now we actually trust the plugins that will use this so...
+                setCoordinate( name, moveTo[name] );
+            }
+            else {
+                setCoordinate( name, toNumber( moveTo[name], getCoordinate(name) ) );
+            }
         });
         updateWidgets();
         updateCanvasPosition();

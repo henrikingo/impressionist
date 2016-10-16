@@ -57,9 +57,9 @@
 (function ( document, window ) {
     'use strict';
     var toolbar;
-    var coordinates = {rotate:{x:0,y:0,z:0},translate:{x:0,y:0,z:0},scale:1};
+    var coordinates = {rotate:{x:0,y:0,z:0},translate:{x:0,y:0,z:0,order:"xyz"},scale:1};
     var widgets = {};
-    var widgetNames = ['x', 'y', 'z', 'rotateX', 'rotateY', 'rotateZ', 'scale'];
+    var widgetNames = ['x', 'y', 'z', 'scale', 'rotateX', 'rotateY', 'rotateZ', 'order'];
     var activeStep;
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
@@ -80,10 +80,17 @@
     // By default the rotations are in X Y Z order that can be reverted by passing `true`
     // as second parameter.
     var rotate = function ( r, revert ) {
-        var rX = " rotateX(" + r.x + "deg) ",
-            rY = " rotateY(" + r.y + "deg) ",
-            rZ = " rotateZ(" + r.z + "deg) ";
-        return revert ? rZ+rY+rX : rX+rY+rZ;
+        var order = r.order ? r.order : "xyz";
+        var css = "";
+        var axes = order.split("");
+        if ( revert ) {
+            axes = axes.reverse();
+        }
+
+        for ( var i in axes ) {
+            css += " rotate" + axes[i].toUpperCase() + "(" + r[axes[i]] + "deg)"
+        }
+        return css;
     };
     
     // `scale` builds a scale transform string for given data.
@@ -152,7 +159,8 @@
             rotate: {
                 x: -coordinates.rotate.x,
                 y: -coordinates.rotate.y,
-                z: -coordinates.rotate.z
+                z: -coordinates.rotate.z,
+                order: coordinates.rotate.order
             },
             translate: {
                 x: -coordinates.translate.x,
@@ -172,7 +180,6 @@
             transitionDuration: "0ms",
             transitionDelay: "0ms"
         });
-        
         css(canvas, {
             transform: rotate(target.rotate, true) + translate(target.translate),
             transitionDuration: "0ms",
@@ -202,6 +209,9 @@
         else if ( name == "scale" ) {
             coordinates.scale = value;
         }
+        else if ( name == "order" ) {
+            coordinates.rotate.order = value;
+        }
         else {
             var xyz = name.substr(-1).toLowerCase();
             coordinates.rotate[xyz] = value;
@@ -215,6 +225,9 @@
         else if ( name == "scale" ) {
             return coordinates.scale;
         }
+        else if ( name == "order" ) {
+            return coordinates.rotate.order;
+        }
         else {
             var xyz = name.substr(-1).toLowerCase();
             return coordinates.rotate[xyz];
@@ -223,6 +236,8 @@
 
     // Set event listeners for widgets.x.input/plus/minus widgets.
     var setListeners = function( widgets, name ){
+        if (name == "order") return; // The last widget is non-numeric, separate listeners set explicitly.
+
         widgets[name].input.addEventListener( "input", function( event ) {
             setCoordinate( name, toNumber( event.target.value, name=="scale"?1:0 ) );
             updateCanvasPosition();
@@ -261,6 +276,59 @@
             widgets[name] = { minus : minus, input : input, plus : plus };
             setListeners( widgets, name );
         });
+        // order widget has its own listeners, as it's not a numeric field
+        var name = "order";
+        widgets[name].input.addEventListener( "input", function( event ) {
+            var v = event.target.value.toString().toLowerCase();
+            var value = "";
+            for (var i = 0; i < Math.min(v.length, 3); i++){
+                if( v[i] != "x" && v[i] != "y" && v[i] != "z" ){
+                    continue;
+                }
+                value += v[i];
+            }
+            event.target.value = value;
+            setCoordinate( name, value );
+            updateCanvasPosition();
+        });
+        widgets[name].minus.addEventListener( "click", function( event ) {
+            var current = getCoordinate(name);
+            var value = "";
+            if( current.length < 3 ) {
+                var available = "xyz";
+                for( var i=0; i < current.length; i++ ) {
+                    // Remove the letters already in the text field from available
+                    available = available.split(current[i]).join("");
+                }
+                value = current + available[0];
+            }
+            else {
+                // shift the order string so that 1st letter becomes last, second first, third second.
+                value = current[1] + current[2] + current[0];
+            }
+            setCoordinate( name, value );
+            updateWidgets();
+            updateCanvasPosition();
+        });
+        widgets[name].plus.addEventListener( "click", function( event ) {
+            var current = getCoordinate(name);
+            var value = "";
+            if( current.length < 3 ) {
+                var available = "xyz";
+                for( var i=0; i < current.length; i++ ) {
+                    // Remove the letters already in the text field from available
+                    available = available.split(current[i]).join("");
+                }
+                value = available[0] + current;
+            }
+            else {
+                // shift the order string so that 1st letter becomes last, second first, third second.
+                value =  current[2] + current[0] + current[1];
+            }
+            setCoordinate( name, value );
+            updateWidgets();
+            updateCanvasPosition();
+        });
     };
     
     // Update the coordinates object from the currently activeStep.
@@ -272,7 +340,8 @@
             rotate: {
                 x: toNumber(stepData.rotateX),
                 y: toNumber(stepData.rotateY),
-                z: toNumber(stepData.rotateZ, toNumber(stepData.rotate))
+                z: toNumber(stepData.rotateZ, toNumber(stepData.rotate)),
+                order: "xyz" // TODO: Not supported in impress.js yet, so all existing steps have this order for now
             },
             translate: {
                 x: toNumber(stepData.x),
@@ -294,7 +363,14 @@
     document.addEventListener("impressionist:camera:setCoordinates", function (event) {
         var moveTo = event.detail;
         widgetNames.forEach( function( name ) {
-            setCoordinate( name, toNumber( moveTo[name], getCoordinate(name) ) );
+            if ( moveTo[name] === undefined ) return; // continue, but in JS forEach is a function
+            if ( name == "order" ) {
+                // TODO: Could do input sanitization here, but for now we actually trust the plugins that will use this so...
+                setCoordinate( name, moveTo[name] );
+            }
+            else {
+                setCoordinate( name, toNumber( moveTo[name], getCoordinate(name) ) );
+            }
         });
         updateWidgets();
         updateCanvasPosition();
@@ -342,6 +418,7 @@
     var toolbar;
     var cameraCoordinates;
     var myWidgets = {};
+    var rotationAxisLocked = {x:false, y:false, z:false};
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
@@ -360,6 +437,14 @@
         var tempDiv = document.createElement("div");
         tempDiv.innerHTML = html;
         return tempDiv.firstChild;
+    };
+    
+    var round = function(coord) {
+        var keys = ["x", "y", "z", "rotateX", "rotateY", "rotateZ"];
+        for (var i in keys ) {
+            coord[keys[i]] = Math.round( coord[ keys[i] ] );
+        }
+        return coord;
     };
 
     var addCameraControls = function() {
@@ -424,6 +509,7 @@
         
         var updateCameraCoordinatesFiber = function(){
             var diff = { x:0, y:0, z:0, rotateX:0, rotateY:0, rotateZ:0 };
+            diff.order = cameraCoordinates.order.input.value;
             var isDragging = false;
             if( myWidgets.xy.drag ) {
                 diff.x = myWidgets.xy.drag.current.x - myWidgets.xy.drag.start.x;
@@ -449,10 +535,12 @@
                 moveTo.x = Number(cameraCoordinates.x.input.value) + diff.x * scale;
                 moveTo.y = Number(cameraCoordinates.y.input.value) + diff.y * scale;
                 moveTo.z = Number(cameraCoordinates.z.input.value) + diff.z * scale;
-                moveTo.scale = Number(cameraCoordinates.scale.input.value) + diff.scale;
-                moveTo.rotateX = Number(cameraCoordinates.rotateX.input.value) + diff.rotateX/10;
-                moveTo.rotateY = Number(cameraCoordinates.rotateY.input.value) - diff.rotateY/10;
+                moveTo.scale = scale + toNumber(diff.scale);
+                moveTo.rotateX = Number(cameraCoordinates.rotateX.input.value) - diff.rotateX/10;
+                moveTo.rotateY = Number(cameraCoordinates.rotateY.input.value) + diff.rotateY/10;
                 moveTo.rotateZ = Number(cameraCoordinates.rotateZ.input.value) - diff.rotateZ/10;
+                moveTo.order = diff.order; // Order is not a diff, just set the new value
+                moveTo = round(moveTo);
                 triggerEvent(toolbar, "impressionist:camera:setCoordinates", moveTo );
                 setTimeout( updateCameraCoordinatesFiber, 100 );
             }
@@ -468,10 +556,11 @@
             // - outside of that, 10 px corridoors in each 90 degree direction, 
             //   within which small deviations from 90 degree angles are ignored.
             for( var k in diff ) {
+                if ( k == "order" ) continue;
                 diff[k] = Math.abs(diff[k]) > 5 ? diff[k] : 0;
             }
-            // For the z widget, attach it to full 90 degrees in the closest direction.
-            // This means you can only zoom or rotate, not both at the same time.
+            // For the z and o widgets, attach to full 90 degrees in the closest direction.
+            // This means you can only zoom or rotate in one direction, not both at the same time.
             // Once a direction is chosen, lock that until dragStop() event.
             if( myWidgets.z.drag && myWidgets.z.drag.setzero ) {
                 diff[myWidgets.z.drag.setzero] = 0;
@@ -486,6 +575,19 @@
                     myWidgets.z.drag.setzero = "z";
                 }
             }
+            if( myWidgets.rotateXY.drag && myWidgets.rotateXY.drag.setzero ) {
+                diff[myWidgets.rotateXY.drag.setzero] = 0;
+            }
+            else {
+                if( Math.abs(diff.rotateX) > Math.abs(diff.rotateY) ) {
+                    diff.rotateY = 0;
+                    myWidgets.rotateXY.drag.setzero = "rotateY";
+                }
+                else if ( Math.abs(diff.rotateX) < Math.abs(diff.rotateY) ) {
+                    diff.rotateX = 0;
+                    myWidgets.rotateXY.drag.setzero = "rotateX";
+                }
+            }
             return diff;
         };
     };
@@ -498,21 +600,33 @@
         addCameraControls();
     }, false);
 
-
-
     // 3d coordinate transformations
     //
     // Without this, the controls work, but they will just modify the camera
-    // window coordinates directly. If the camera was rotated, this no longer makes
+    // coordinates directly. If the camera was rotated, this no longer makes
     // sense. For example, setting rotate: z: to 180, would turn everything
     // upside down. Now, if you pull the "+" (xy) control up, you will
     // actually see the camera panning down.
     //
-    // It's time for some serious math, so I've hid these here at the end.
     // We want the controls to move the camera relative to the current viewport/camera position,
     // not the origin of the xyz coordinates. These functions modify the diff object so that
     // the movements are according to current viewport.
-    
+    //
+    // For the x/y/z translations, we simply modify the diff vector to account for all the possible
+    // rotations that might be in place. 
+    //
+    // Based on http://www.math.tau.ac.il/~dcor/Graphics/cg-slides/geom3d.pdf 
+    // and https://24ways.org/2010/intro-to-css-3d-transforms/
+    //
+    // For adjusting rotations, a different strategy is needed.
+    // It turns out that for rotations order matters, and whatever is the first rotation, will
+    // just work without modification. For the following ones, we could try some sin()*cos()
+    // multiplication magic, but in some edge cases (in particular, rotateY(90) with the default
+    // order=xyz) two axes can collapse into one, so we lose a dimension and no amount of sin()*cos()
+    // is able to do anything about that. So instead with rotations the strategy is just to move
+    // the axis currently being rotated to be last. This is trivial if the current rotation around
+    // that axis is 0. If it already has a value, we need to "drain" it to zero first, by computing
+    // and adding an equivalent rotation added to the other axes.
     var coordinateTransformation = function(diff){
         var deg = function(rad) {
           return rad * (180 / Math.PI);
@@ -524,29 +638,72 @@
         
         var newDiff = {};
 
-        var rotateX = toNumber( cameraCoordinates.rotateX.input.value );
-        var rotateY = toNumber( cameraCoordinates.rotateY.input.value );
-        var rotateZ = toNumber( cameraCoordinates.rotateZ.input.value );
+        var xyz = diff.order; // Note: This is the old value, not a diff. The only place to change it is this method.
+        
+        var angle = {
+            x: toNumber(cameraCoordinates.rotateX.input.value),
+            y: toNumber(cameraCoordinates.rotateY.input.value),
+            z: toNumber(cameraCoordinates.rotateZ.input.value)
+        };
 
-        // Based on http://www.math.tau.ac.il/~dcor/Graphics/cg-slides/geom3d.pdf but omitting the use of matrix calculus.
-        // I get quite nauseous by this level of math, so basically the below was done by a combination of
-        // cargo culting and trial-and error. If you're a real mathematician and are reading this thinking that there's
-        // a shorter and more elegant equivalent form to these formulas, then by all means tell me. (henrik.ingo@avoinelama.fi).
-        newDiff.x = diff.x * Math.cos( rad(rotateZ) ) * Math.cos( rad(rotateY) )
-                  - diff.y * Math.sin( rad(rotateZ) ) * Math.cos( rad(rotateY) )
-                  + diff.z * Math.sin( rad(rotateY) );
+        var computeRotate = {
+            x: function(angle, v){
+                var vv = [];
+                vv[0] = v[0];
+                vv[1] = v[1] * Math.cos( rad(angle) ) - v[2] * Math.sin( rad(angle) );
+                vv[2] = v[2] * Math.cos( rad(angle) ) + v[1] * Math.sin( rad(angle) );
+                return vv;
+            },
+            y: function(angle, v){
+                var vv = [];
+                vv[0] = v[0] * Math.cos( rad(angle) ) + v[2] * Math.sin( rad(angle) );
+                vv[1] = v[1];
+                vv[2] = v[2] * Math.cos( rad(angle) ) - v[0] * Math.sin( rad(angle) );
+                return vv;
+            },
+            z: function(angle, v){
+                var vv = [];
+                vv[0] = v[0] * Math.cos( rad(angle) ) - v[1] * Math.sin( rad(angle) );
+                vv[1] = v[1] * Math.cos( rad(angle) ) + v[0] * Math.sin( rad(angle) );
+                vv[2] = v[2];
+                return vv;
+            }
+        };
 
-        newDiff.y = diff.y * ( Math.cos( rad(rotateZ) ) * Math.cos( rad(rotateX) ) 
-                             - Math.sin( rad(rotateX) ) * Math.sin( rad(rotateY) ) * Math.sin( rad(rotateZ) ) )
-                  + diff.x * ( Math.sin( rad(rotateZ) ) * Math.cos( rad(rotateX) ) 
-                             + Math.sin( rad(rotateY) ) * Math.sin( rad(rotateX) ) * Math.cos( rad(rotateZ) ) )
-                  - diff.z *   Math.sin( rad(rotateX) ) * Math.cos( rad(rotateY) );
+        // Transform the [x, y, z] translation vector moving the camera to account for the current rotations.
+        // Note that for the camera. aka the canvas, impress.js applies the rotation in the reverse order
+        var v = [ diff.x, diff.y, diff.z ];
+        for ( var i = xyz.length-1; i >= 0; i-- ) {
+            v = computeRotate[xyz[i]](angle[xyz[i]], v);
+        }
+        newDiff.x = v[0];
+        newDiff.y = v[1];
+        newDiff.z = v[2];
 
-        newDiff.z = diff.z *   Math.cos( rad(rotateX) ) * Math.cos( rad(rotateY) )
-                  + diff.y * ( Math.sin( rad(rotateY) ) * Math.sin( rad(rotateZ) ) * Math.cos( rad(rotateX) )
-                             + Math.sin( rad(rotateX) ) * Math.cos( rad(rotateZ) ) )
-                  + diff.x * ( Math.sin( rad(rotateZ) ) * Math.sin( rad(rotateX) ) 
-                             - Math.sin( rad(rotateY) ) * Math.cos( rad(rotateZ) ) * Math.cos( rad(rotateX) ) );
+        // Rotations
+        // Capture current rotations from cameraCoordinates
+        var currentRotations = {};
+        for ( var i = 0; i < xyz.length; i++ ) {
+            // iterate over rotateX/Y/Z in the order they appear in "order"
+            var rotateStr = "rotate" + xyz[i].toUpperCase();
+            currentRotations[xyz[i]] = toNumber( cameraCoordinates[rotateStr].input.value );
+        }
+
+        // Controls only allow 1 axis at a time to be rotating. Find out which one, if any.
+        var axis = "";
+        if ( diff.rotateX ) axis = "x";
+        if ( diff.rotateY ) axis = "y";
+        if ( diff.rotateZ ) axis = "z";
+
+        // See if we can move that axis last in the order field
+        if ( Math.abs( currentRotations[axis] ) < 1 && !rotationAxisLocked[axis] ) {
+            // Move that axis last in the order
+            newDiff.order = diff.order.split(axis).join("") + axis;
+        }
+        // However, we only ever move the axis once. Changing the axis (direction) of rotation
+        // once it has started is confusing to the user. So now that we're moving along this axis,
+        // it cannot be moved in the order anymore.
+        rotationAxisLocked[axis] = true;
 
         newDiff.rotateX = diff.rotateX;
         newDiff.rotateY = diff.rotateY;
@@ -554,11 +711,11 @@
         newDiff.scale = diff.scale;
         return newDiff;
     };
-    
 
-
-
-
+    // Reset rotationAxisLocked whenever entering a new step
+    document.addEventListener("impress:stepenter", function (event) {
+        rotationAxisLocked = {x:false, y:false, z:false};
+    });
 
 
 

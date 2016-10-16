@@ -418,7 +418,7 @@
     var toolbar;
     var cameraCoordinates;
     var myWidgets = {};
-    var rotationAxisLocked = {x:false, y:false, z:false};
+    var rotationAxisLock = {x:false, y:false, z:false};
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
@@ -592,10 +592,31 @@
         };
     };
     
+    // Reset rotationAxisLock when entering a new step, or when order field was manually edited
+    var resetRotationAxisLock = function () {
+        rotationAxisLock = {x:false, y:false, z:false};
+    };
+    
+    // Reset rotationAxisLock whenever entering a new step
+    document.addEventListener("impress:stepenter", function (event) {
+        resetRotationAxisLock();
+    });
+    
     // Wait for camera plugin to initialize first
     
     document.addEventListener("impressionist:camera:init", function (event) {
         cameraCoordinates = event.detail.widgets;
+        // Reset rotationAxisLock if the order field was manually edited
+        cameraCoordinates.order.input.addEventListener("input", function (event) {
+            resetRotationAxisLock();
+        });
+        cameraCoordinates.order.plus.addEventListener("click", function (event) {
+            resetRotationAxisLock();
+        });
+        cameraCoordinates.order.minus.addEventListener("click", function (event) {
+            resetRotationAxisLock();
+        });
+
         toolbar = document.getElementById("impressionist-toolbar");
         addCameraControls();
     }, false);
@@ -696,14 +717,14 @@
         if ( diff.rotateZ ) axis = "z";
 
         // See if we can move that axis last in the order field
-        if ( Math.abs( currentRotations[axis] ) < 1 && !rotationAxisLocked[axis] ) {
+        if ( Math.abs( currentRotations[axis] ) < 1 && !rotationAxisLock[axis] ) {
             // Move that axis last in the order
             newDiff.order = diff.order.split(axis).join("") + axis;
         }
         // However, we only ever move the axis once. Changing the axis (direction) of rotation
         // once it has started is confusing to the user. So now that we're moving along this axis,
         // it cannot be moved in the order anymore.
-        rotationAxisLocked[axis] = true;
+        rotationAxisLock[axis] = true;
 
         newDiff.rotateX = diff.rotateX;
         newDiff.rotateY = diff.rotateY;
@@ -711,11 +732,6 @@
         newDiff.scale = diff.scale;
         return newDiff;
     };
-
-    // Reset rotationAxisLocked whenever entering a new step
-    document.addEventListener("impress:stepenter", function (event) {
-        rotationAxisLocked = {x:false, y:false, z:false};
-    });
 
 
 

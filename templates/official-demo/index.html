@@ -25,8 +25,6 @@
     <link href="css/impress-demo.css" rel="stylesheet" />
     <link href="../../css/impressionist.css" rel="stylesheet" />
     
-    <link rel="shortcut icon" href="favicon.png" />
-    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
 </head>
 <body class="impress-not-supported">
 
@@ -96,10 +94,11 @@
 
 </div>
 
+<div id="tinymce-toolbar"></div>
 <div id="impress-toolbar"></div>
-<script type="text/javascript" src="extras/impress-console/js/impressConsole.js"></script>
+<script type="text/javascript" src="../../impress.js/extras/impress-console/js/impressConsole.js"></script>
 <script type="text/javascript">
-  var impressConsoleCss = 'extras/impress-console/css/impressConsole.css';
+  var impressConsoleCss = '../../impress.js/extras/impress-console/css/impressConsole.css';
 </script>
 
 <script src="js/impress.js"></script>
@@ -109,5 +108,36 @@
 <script src="../../js/impressionist.js"></script>
 
 <script>impress().init();</script>
+
+<script src="../../node_modules/tinymce/tinymce.js"></script>
+<script>
+/*
+// Insert a wrapper div between each div.step and its contents
+  var steps = document.querySelectorAll("#impress .step");
+  for( var i = 0; i < steps.length; i++ ){
+    var content = steps[i].innerHTML;
+    steps[i].innerHTML = '<div class="impressionist impressionist-step-wrapper"></div>';
+    steps[i].firstChild.innerHTML = content;
+  }
+*/
+  tinymce.init({
+    inline: true,
+    selector: '.step',
+    theme: 'modern',
+    width: 780,
+    height: 550,
+    menubar: false,
+    statusbar: false,
+    fixed_toolbar_container: '#tinymce-toolbar',
+    toolbar: 'fontselect fontsizeselect | cut copy paste | undo redo | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table code',
+    fontsize_formats: '8pt 12pt 16pt 20pt 24pt 30pt 36pt 48pt 72pt 96pt',
+    plugins: [
+      'advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker',
+      'searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking',
+      'save table contextmenu directionality emoticons template paste textcolor'
+    ]
+  });
+</script>
+  
 </body>
 </html>

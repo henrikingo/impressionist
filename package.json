@@ -28,6 +28,9 @@
   "scripts": {
     "build": "node build.js"
   },
+  "dependencies": {
+    "tinymce": "*"
+  },
   "devDependencies": {
     "buildify": "*"
   }

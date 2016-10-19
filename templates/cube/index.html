@@ -1,0 +1,106 @@
+<!doctype html>
+
+<!--
+  This is a simple example / template impress.js slide show. The goal is to be
+  easier to read for a first timer than the official and very feature rich
+  demo by bartaz (http://bartaz.github.io/impress.js/). It's also a very
+  traditional presentation that looks like slides (square screens with bullet
+  points...), again to make a first timer feel more at home. From this simple
+  presentation you can then go on to more powerful impress.js presentations!
+  
+  This example is hopefully helpful for people that want to create both
+  simple and (eventually) awesome presentations in impress.js and comfortable
+  doing that directly in HTML.
+  
+  By: @henrikingo (Still based on the HTML from bartaz' demo.)  
+    
+-->
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Cube | Explore impress.js in 3D | by Henrik Ingo @henrikingo</title>
+    <meta name="description" content="Explore impress.js in 3D" />
+    <meta name="author" content="Henrik Ingo" />
+    <link href="css/cube.css" rel="stylesheet" />
+    <link href="../../css/impressionist.css" rel="stylesheet" />
+</head>
+
+<body class="impress-not-supported">
+<div class="fallback-message">
+    <p>Your browser <b>doesn't support the features required</b> by impress.js, so you are presented with a simplified version of this presentation.</p>
+    <p>For the best experience please use the latest <b>Chrome</b>, <b>Safari</b> or <b>Firefox</b> browser.</p>
+</div>
+
+<div id="impress" data-transition-duration="2000">
+
+    <div class="step" data-x="0" data-y="0" data-z="350">
+        <p>Slide one</p>
+    </div>
+
+    <div class="step" data-x="350" data-y="0" data-z="0" data-rotate-y="90">
+        <p>Slide two</p>
+    </div>
+
+    <div class="step" data-x="0" data-y="350" data-z="0" data-rotate-x="-90" data-rotate-z="90">
+        <p>Slide three</p>
+    </div>
+
+    <div class="step" data-x="0" data-y="-350" data-z="0" data-rotate-x="90" data-rotate-z="-90">
+        <p>Slide four</p>
+    </div>
+
+    <div class="step" data-x="-350" data-y="0" data-z="0" data-rotate-y="-90" data-rotate-z="-180">
+        <p>Slide five</p>
+    </div>
+
+    <div class="step" data-x="0" data-y="0" data-z="-350" data-rotate-y="-180" data-rotate-z="-180">
+        <p>Slide six</p>
+    </div>
+
+    <div id="overview" class="step" data-x="700" data-y="-100" data-z="1000" data-scale="1" style="pointer-events: none;">
+    </div>
+</div>
+
+<div id="tinymce-toolbar"></div>
+<div id="impress-toolbar"></div>
+<div id="impress-help"></div>
+
+
+
+<script src="../../js/impressionist.js"></script>
+<script type="text/javascript" src="../../impress.js/js/impress.js"></script>
+<script>impress().init();</script>
+
+<script src="../../node_modules/tinymce/tinymce.js"></script>
+<script>
+/*
+// Insert a wrapper div between each div.step and its contents
+  var steps = document.querySelectorAll("#impress .step");
+  for( var i = 0; i < steps.length; i++ ){
+    var content = steps[i].innerHTML;
+    steps[i].innerHTML = '<div class="impressionist impressionist-step-wrapper"></div>';
+    steps[i].firstChild.innerHTML = content;
+  }
+*/
+  tinymce.init({
+    inline: true,
+    selector: '.step',
+    theme: 'modern',
+    width: 780,
+    height: 550,
+    menubar: false,
+    statusbar: false,
+    fixed_toolbar_container: '#tinymce-toolbar',
+    toolbar: 'styleselect fontselect fontsizeselect | cut copy paste | undo redo | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table code',
+    fontsize_formats: '8pt 12pt 16pt 20pt 24pt 30pt 36pt 48pt 72pt 96pt',
+    plugins: [
+      'advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker',
+      'searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking',
+      'save table contextmenu directionality emoticons template paste textcolor'
+    ]
+  });
+</script>
+
+</body>
+</html>

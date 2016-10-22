@@ -5,12 +5,12 @@
   "version": "0.1.0",
   "description": "A visual editor for creating 3D impress.js presentations",
   "homepage": "http://github.com/henrikingo/impressionist",
-  "main": "js/impressionist.js",
-  "repository" :
-    { "type" : "git",
-      "url" : "https://github.com/henrikingo/impressionist.git",
-      "github": "https://github.com/henrikingo/impressionist"
-    },
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/henrikingo/impressionist.git",
+    "github": "https://github.com/henrikingo/impressionist"
+  },
   "keywords": [
     "presentation",
     "slides",
@@ -26,12 +26,14 @@
     "url": "https://github.com/henrikingo/impressionist/issues"
   },
   "scripts": {
-    "build": "node build.js"
+    "build": "node build.js",
+    "start": "electron ."
   },
   "dependencies": {
     "tinymce": "*"
   },
   "devDependencies": {
-    "buildify": "*"
+    "buildify": "*",
+    "electron": "^1.4.1"
   }
 }

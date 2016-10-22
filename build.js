@@ -6,6 +6,7 @@ buildify()
   .concat(['src/plugins/axis/axis.js',
            'src/plugins/camera/camera.js',
            'src/plugins/cameracontrols/cameracontrols.js',
+           'src/plugins/tinymce/tinymce.js',
            'src/plugins/toolbar/toolbar.js'])
   .save('js/impressionist.js')
   .uglify()

@@ -106,38 +106,9 @@
     This is the impressionist wysiwyg editing functionality.
 -->
 <script src="../../js/impressionist.js"></script>
+<script src="../../node_modules/tinymce/tinymce.js"></script>
 
 <script>impress().init();</script>
-
-<script src="../../node_modules/tinymce/tinymce.js"></script>
-<script>
-/*
-// Insert a wrapper div between each div.step and its contents
-  var steps = document.querySelectorAll("#impress .step");
-  for( var i = 0; i < steps.length; i++ ){
-    var content = steps[i].innerHTML;
-    steps[i].innerHTML = '<div class="impressionist impressionist-step-wrapper"></div>';
-    steps[i].firstChild.innerHTML = content;
-  }
-*/
-  tinymce.init({
-    inline: true,
-    selector: '.step',
-    theme: 'modern',
-    width: 780,
-    height: 550,
-    menubar: false,
-    statusbar: false,
-    fixed_toolbar_container: '#tinymce-toolbar',
-    toolbar: 'fontselect fontsizeselect | cut copy paste | undo redo | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image table code',
-    fontsize_formats: '8pt 12pt 16pt 20pt 24pt 30pt 36pt 48pt 72pt 96pt',
-    plugins: [
-      'advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker',
-      'searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking',
-      'save table contextmenu directionality emoticons template paste textcolor'
-    ]
-  });
-</script>
   
 </body>
 </html>

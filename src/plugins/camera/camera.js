@@ -13,94 +13,22 @@
     var widgets = {};
     var widgetNames = ['x', 'y', 'z', 'scale', 'rotateX', 'rotateY', 'rotateZ', 'order'];
     var activeStep;
+    var util = impressionist().util;
+    var css3 = impressionist().util;
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
 
-    // Helper functions to create 3D CSS3 transitions. These are 99% copy pasted from impress.js internals...
-    
-    var toNumber = function (numeric, fallback) {
-        return isNaN(numeric) ? (fallback || 0) : Number(numeric);
-    };
-
-    // `translate` builds a translate transform string for given data.
-    var translate = function ( t ) {
-        return " translate3d(" + t.x + "px," + t.y + "px," + t.z + "px) ";
-    };
-    
-    // `rotate` builds a rotate transform string for given data.
-    // By default the rotations are in X Y Z order that can be reverted by passing `true`
-    // as second parameter.
-    var rotate = function ( r, revert ) {
-        var order = r.order ? r.order : "xyz";
-        var css = "";
-        var axes = order.split("");
-        if ( revert ) {
-            axes = axes.reverse();
-        }
-
-        for ( var i in axes ) {
-            css += " rotate" + axes[i].toUpperCase() + "(" + r[axes[i]] + "deg)"
-        }
-        return css;
-    };
-    
-    // `scale` builds a scale transform string for given data.
-    var scale = function ( s ) {
-        return " scale(" + s + ") ";
-    };
-
-    // `perspective` builds a perspective transform string for given data.
-    var perspective = function ( p ) {
-        return " perspective(" + p + "px) ";
-    };
-
-    // `css` function applies the styles given in `props` object to the element
-    // given as `el`. It runs all property names through `pfx` function to make
-    // sure proper prefixed version of the property is used.
-    var css = function ( el, props ) {
-        var key, pkey;
-        for ( key in props ) {
-            if ( props.hasOwnProperty(key) ) {
-                pkey = key;
-                if ( pkey !== null ) {
-                    el.style[pkey] = props[key];
-                }
-            }
-        }
-        return el;
-    };
-
-    var computeWindowScale = function ( config ) {
-        var hScale = window.innerHeight / config.height,
-            wScale = window.innerWidth / config.width,
-            scale = hScale > wScale ? wScale : hScale;
-        if (config.maxScale && scale > config.maxScale) {
-            scale = config.maxScale;
-        }
-        if (config.minScale && scale < config.minScale) {
-            scale = config.minScale;
-        }
-        return scale;
-    };
-    
-
-
-
-
-
-    // ... from here we have new code/functionality.
-    
     // Get user input values and move/scale canvas accordingly
     var updateCanvasPosition = function() {
         var root = document.getElementById("impress");
         var rootData = root.dataset;
         var config = {
-                width: toNumber( rootData.width, 1024 ),
-                height: toNumber( rootData.height, 768 ),
-                maxScale: toNumber( rootData.maxScale, 1 ),
-                minScale: toNumber( rootData.minScale, 0 ),
-                perspective: toNumber( rootData.perspective, 1000 )
+                width: util.toNumber( rootData.width, 1024 ),
+                height: util.toNumber( rootData.height, 768 ),
+                maxScale: util.toNumber( rootData.maxScale, 1 ),
+                minScale: util.toNumber( rootData.minScale, 0 ),
+                perspective: util.toNumber( rootData.perspective, 1000 )
         };
         var canvas = root.firstChild;
         var activeStep = document.querySelector("div#impress div.step.active");
@@ -122,18 +50,18 @@
             scale: 1 / coordinates.scale
         };
 
-        var windowScale = computeWindowScale(config);
+        var windowScale = css3.computeWindowScale(config);
         var targetScale = target.scale * windowScale;
 
-        css(root, {
+        css3.css(root, {
             // to keep the perspective look similar for different scales
             // we need to 'scale' the perspective, too
-            transform: perspective( config.perspective / targetScale ) + scale( targetScale ),
+            transform: css3.perspective( config.perspective / targetScale ) + css3.scale( targetScale ),
             transitionDuration: "0ms",
             transitionDelay: "0ms"
         });
-        css(canvas, {
-            transform: rotate(target.rotate, true) + translate(target.translate),
+        css3.css(canvas, {
+            transform: css3.rotate(target.rotate, true) + css3.translate(target.translate),
             transitionDuration: "0ms",
             transitionDelay: "0ms"
         });
@@ -145,12 +73,6 @@
         var event = document.createEvent("CustomEvent");
         event.initCustomEvent(eventName, true, true, detail);
         el.dispatchEvent(event);
-    };
-
-    var makeDomElement = function ( html ) {
-        var tempDiv = document.createElement("div");
-        tempDiv.innerHTML = html;
-        return tempDiv.firstChild;
     };
 
     // Helper function to set the right path in `coordinates` object, given a name from widgetNames
@@ -191,7 +113,7 @@
         if (name == "order") return; // The last widget is non-numeric, separate listeners set explicitly.
 
         widgets[name].input.addEventListener( "input", function( event ) {
-            setCoordinate( name, toNumber( event.target.value, name=="scale"?1:0 ) );
+            setCoordinate( name, util.toNumber( event.target.value, name=="scale"?1:0 ) );
             updateCanvasPosition();
         });
         widgets[name].minus.addEventListener( "click", function( event ) {
@@ -213,7 +135,7 @@
         widgetNames.forEach( function(name){
             var r = name == "rotateX" ? "rotate: " : "";
             var label = name.substr(0,6)=="rotate" ? name.substr(-1).toLowerCase() : name;
-            var element = makeDomElement( '<span>' + r + label + 
+            var element = util.makeDomElement( '<span>' + r + label + 
                                           ':<input id="impressionist-camera-' + name + 
                                           '" class="impressionist-camera impressionist-camera-input" type="text" />' +
                                           '<button id="impressionist-camera-' + name + '-minus" ' +
@@ -290,17 +212,17 @@
         var stepData = activeStep.dataset;
         coordinates = {
             rotate: {
-                x: toNumber(stepData.rotateX),
-                y: toNumber(stepData.rotateY),
-                z: toNumber(stepData.rotateZ, toNumber(stepData.rotate)),
+                x: util.toNumber(stepData.rotateX),
+                y: util.toNumber(stepData.rotateY),
+                z: util.toNumber(stepData.rotateZ, util.toNumber(stepData.rotate)),
                 order: "xyz" // TODO: Not supported in impress.js yet, so all existing steps have this order for now
             },
             translate: {
-                x: toNumber(stepData.x),
-                y: toNumber(stepData.y),
-                z: toNumber(stepData.z)
+                x: util.toNumber(stepData.x),
+                y: util.toNumber(stepData.y),
+                z: util.toNumber(stepData.z)
             },
-            scale: toNumber(stepData.scale, 1)
+            scale: util.toNumber(stepData.scale, 1)
         };
     };
 
@@ -321,7 +243,7 @@
                 setCoordinate( name, moveTo[name] );
             }
             else {
-                setCoordinate( name, toNumber( moveTo[name], getCoordinate(name) ) );
+                setCoordinate( name, util.toNumber( moveTo[name], getCoordinate(name) ) );
             }
         });
         updateWidgets();

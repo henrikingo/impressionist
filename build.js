@@ -2,7 +2,12 @@ var buildify = require('buildify');
  
 
 buildify()
+   // Core impressionist file that provides impressionist() api function.
   .load('src/impressionist.js')
+  // Libraries that are made available early, used by other plugins
+  .concat(['src/lib/css3.js',
+           'src/lib/util.js'])
+  // Plugins provide features
   .concat(['src/plugins/axis/axis.js',
            'src/plugins/camera/camera.js',
            'src/plugins/cameracontrols/cameracontrols.js',

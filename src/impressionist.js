@@ -18,6 +18,7 @@
 (function ( document, window ) {
     'use strict';
     
+    // Populated by separate library plugins, see src/lib/*
     var impressionistApi = {};
 
     window.impressionist = function(){

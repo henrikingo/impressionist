@@ -11,7 +11,7 @@
 
     // Return the entire document when requested
     // TODO: We need to actually remove the impressionist and tinymce controls first and return just the impress.js bits
-    if( require ){
+    if( window.require ){
         var ipc = require('electron').ipcRenderer;
         ipc.on('impressionist-get-documentElement', function (event, filename) {
             ipc.send('impressionist-return-documentElement', {

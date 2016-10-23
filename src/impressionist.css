@@ -4,10 +4,3 @@
  * Copyright 2016, Henrik Ingo (@henrikingo)
  * MIT License
  */
-
-
-/* Tinymce integration */
-#tinymce-toolbar,
-.mce-floatpanel {
-    pointer-events: auto;
-}

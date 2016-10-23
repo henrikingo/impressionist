@@ -5,12 +5,6 @@
  * MIT License
  */
 
-
-/* Tinymce integration */
-#tinymce-toolbar,
-.mce-floatpanel {
-    pointer-events: auto;
-}
 /* Axis plugin */
 #impressionist-axis-x,
 #impressionist-axis-y,
@@ -75,6 +69,11 @@
     right: 50px;
 }
 
+/* Tinymce integration */
+#tinymce-toolbar,
+.mce-floatpanel {
+    pointer-events: auto;
+}
 /**
  * CSS styles for Impressionist presentations editor
  *

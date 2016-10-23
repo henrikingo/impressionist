@@ -36,8 +36,10 @@
 
 
     document.addEventListener("impress:init", function (event) {
-        tinymceInit();
+        var html = '<div id="tinymce-toolbar"></div>\n';
+        var toolbar = impressionist().util.makeDomElement(html);
+        document.body.appendChild(toolbar);
+        impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
     }, false);
-
 
 })(document, window);

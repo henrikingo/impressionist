@@ -1,0 +1,5 @@
+/* Tinymce integration */
+#tinymce-toolbar,
+.mce-floatpanel {
+    pointer-events: auto;
+}

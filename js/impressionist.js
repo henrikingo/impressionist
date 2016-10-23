@@ -18,6 +18,7 @@
 (function ( document, window ) {
     'use strict';
     
+    // Populated by separate library plugins, see src/lib/*
     var impressionistApi = {};
 
     window.impressionist = function(){
@@ -135,6 +136,15 @@
         return tempDiv.firstChild;
     };
     
+    impressionist().util.loadJavaScript = function ( url, callback ) {
+        var script = document.createElement("script");
+        script.src = url;
+        script.type = "text/javascript";
+        script.onreadystatechange = callback;
+        script.onload = callback;
+        document.head.appendChild(script);
+    };
+    
 })(document, window);
 
 /**
@@ -201,7 +211,7 @@
     var widgetNames = ['x', 'y', 'z', 'scale', 'rotateX', 'rotateY', 'rotateZ', 'order'];
     var activeStep;
     var util = impressionist().util;
-    var css3 = impressionist().util;
+    var css3 = impressionist().css3;
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
@@ -798,7 +808,7 @@
 
     // Return the entire document when requested
     // TODO: We need to actually remove the impressionist and tinymce controls first and return just the impress.js bits
-    if( require ){
+    if( window.require ){
         var ipc = require('electron').ipcRenderer;
         ipc.on('impressionist-get-documentElement', function (event, filename) {
             ipc.send('impressionist-return-documentElement', {
@@ -849,9 +859,11 @@
 
 
     document.addEventListener("impress:init", function (event) {
-        tinymceInit();
+        var html = '<div id="tinymce-toolbar"></div>\n';
+        var toolbar = impressionist().util.makeDomElement(html);
+        document.body.appendChild(toolbar);
+        impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
     }, false);
-
 
 })(document, window);
 

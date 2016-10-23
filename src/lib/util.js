@@ -29,4 +29,13 @@
         return tempDiv.firstChild;
     };
     
+    impressionist().util.loadJavaScript = function ( url, callback ) {
+        var script = document.createElement("script");
+        script.src = url;
+        script.type = "text/javascript";
+        script.onreadystatechange = callback;
+        script.onload = callback;
+        document.head.appendChild(script);
+    };
+    
 })(document, window);

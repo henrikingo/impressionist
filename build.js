@@ -24,5 +24,6 @@ buildify()
   .concat(['src/plugins/axis/axis.css',
            'src/plugins/camera/camera.css',
            'src/plugins/cameracontrols/cameracontrols.css',
+           'src/plugins/tinymce/tinymce.css',
            'src/plugins/toolbar/toolbar.css'])
   .save('css/impressionist.css');

@@ -14,7 +14,7 @@
     var widgetNames = ['x', 'y', 'z', 'scale', 'rotateX', 'rotateY', 'rotateZ', 'order'];
     var activeStep;
     var util = impressionist().util;
-    var css3 = impressionist().util;
+    var css3 = impressionist().css3;
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 

@@ -15,6 +15,11 @@ function createWindow () {
     // debug
     mainWindow.webContents.openDevTools()
 
+    // This triggers when user opens a presentation and it has loaded into the window
+    mainWindow.webContents.on('dom-ready', function(event) {
+        mainWindow.webContents.executeJavaScript(loadImpressionist())
+    })
+
     mainWindow.on('closed', function () {
         mainWindow = null
     })
@@ -36,3 +41,13 @@ app.on('activate', function () {
         createWindow()
     }
 })
+
+
+function loadImpressionist () {
+    return `var script = document.createElement("script");
+    script.src = process.resourcesPath + "/../../../../js/impressionist.js";
+    script.type = "text/javascript";
+    script.onload = function(){impressionist().util.triggerEvent(document, "impressionist:init", {})}
+    document.head.appendChild(script);
+    `
+}

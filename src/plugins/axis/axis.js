@@ -37,7 +37,7 @@
     root.appendChild(z);
 
     // Wait until everyone is initialized before trying to communicate API calls
-    document.addEventListener("impress:init", function( event ){
+    document.addEventListener("impressionist:init", function( event ){
         triggerEvent( x, "impress:navigation-ui:hideStep", {} );
         triggerEvent( y, "impress:navigation-ui:hideStep", {} );
         triggerEvent( z, "impress:navigation-ui:hideStep", {} );

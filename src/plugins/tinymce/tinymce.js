@@ -1,7 +1,7 @@
 /**
  * Tinymce integration
  *
- * Initialize tinyMCE editor after impress:init. Note that tinyMCE itself is in node_modules.
+ * Initialize tinyMCE editor after impressionist:init. Note that tinyMCE itself is in node_modules.
  *
  * Copyright 2016 Henrik Ingo (@henrikingo)
  * Released under the MIT license.
@@ -35,7 +35,7 @@
     };
 
 
-    document.addEventListener("impress:init", function (event) {
+    document.addEventListener("impressionist:init", function (event) {
         var html = '<div id="tinymce-toolbar"></div>\n';
         var toolbar = impressionist().util.makeDomElement(html);
         document.body.appendChild(toolbar);

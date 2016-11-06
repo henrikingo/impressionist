@@ -5,31 +5,6 @@
  * MIT License
  */
 
-/* Axis plugin */
-#impressionist-axis-x,
-#impressionist-axis-y,
-#impressionist-axis-z {
-    border-bottom: dashed 20px;
-    height: 0px;
-    padding: 0px;
-    width: 10000px;
-    /* The axis are steps, but we don't want you to click on them to move to them. */
-    pointer-events: none;
-    opacity: 0.6;
-}
-
-#impressionist-axis-x {
-    border-color: red;
-}
-
-#impressionist-axis-y {
-    border-color: blue;
-}
-
-#impressionist-axis-z {
-    border-color: purple;
-}
-
 /* Camera plugin */
 
 #impressionist-toolbar .impressionist-camera-minus,

@@ -8,7 +8,8 @@ buildify()
   .concat(['src/lib/css3.js',
            'src/lib/util.js'])
   // Plugins provide features
-  .concat(['src/plugins/axis/axis.js',
+  .concat([
+           // Disabled when we moved to electron: 'src/plugins/axis/axis.js',
            'src/plugins/camera/camera.js',
            'src/plugins/cameracontrols/cameracontrols.js',
            'src/plugins/electron/electron.js',
@@ -21,7 +22,8 @@ buildify()
 
 buildify()
   .load('src/impressionist.css')
-  .concat(['src/plugins/axis/axis.css',
+  .concat([
+           // Disabled when we moved to electron: 'src/plugins/axis/axis.css',
            'src/plugins/camera/camera.css',
            'src/plugins/cameracontrols/cameracontrols.css',
            'src/plugins/tinymce/tinymce.css',

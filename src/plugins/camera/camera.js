@@ -252,10 +252,13 @@
 
     // impress.js events ///////////////////////////////////////////////////////////////////////////
     
-    document.addEventListener("impress:init", function (event) {
+    document.addEventListener("impressionist:init", function (event) {
         toolbar = document.getElementById("impressionist-toolbar");
         addCameraControls( event );
         triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
+        activeStep = document.querySelector("#impress .step.active");
+        getActiveStepCoordinates(activeStep);
+        updateWidgets();
     }, false);
     
     // If user moves to another step with impress().prev() / .next() or .goto(), then the canvas

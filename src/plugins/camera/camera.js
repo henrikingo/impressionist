@@ -252,8 +252,8 @@
 
     // impress.js events ///////////////////////////////////////////////////////////////////////////
     
-    document.addEventListener("impressionist:init", function (event) {
-        toolbar = document.getElementById("impressionist-toolbar");
+    document.addEventListener("impressionist:toolbar:init", function (event) {
+        toolbar = event.detail.toolbar;
         addCameraControls( event );
         triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
         activeStep = document.querySelector("#impress .step.active");

@@ -8,6 +8,8 @@
  */
 (function ( document, window ) {
     'use strict';
+    var toolbar;
+    var script;
 
     var tinymceInit = function() {
         window.tinymce.init({
@@ -32,14 +34,15 @@
             'save table contextmenu directionality emoticons template paste textcolor'
             ]
         });
+        impressionist().util.triggerEvent( document, "impressionist:tinymce:init", { script : script, toolbar : toolbar } );
     };
 
 
     document.addEventListener("impressionist:init", function (event) {
         var html = '<div id="tinymce-toolbar"></div>\n';
-        var toolbar = impressionist().util.makeDomElement(html);
+        toolbar = impressionist().util.makeDomElement(html);
         document.body.appendChild(toolbar);
-        impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
+        script = impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
     }, false);
 
 })(document, window);

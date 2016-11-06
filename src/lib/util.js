@@ -36,6 +36,7 @@
         script.onreadystatechange = callback;
         script.onload = callback;
         document.head.appendChild(script);
+        return script;
     };
     
     impressionist().util.loadCss = function ( url, callback ) {
@@ -46,6 +47,7 @@
         link.onreadystatechange = callback;
         link.onload = callback;
         document.head.appendChild(link);
+        return link;
     };
     
 })(document, window);

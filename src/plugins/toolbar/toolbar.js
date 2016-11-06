@@ -11,7 +11,6 @@
     // we add this toolbar without asking permission. Assumption is that since you're using impressionist, you want this.
     var toolbar = document.createElement("DIV");
     toolbar.id = "impressionist-toolbar";
-    document.body.appendChild(toolbar);
     var groups = [];
 
     /**
@@ -89,6 +88,16 @@
     toolbar.addEventListener("impressionist:toolbar:removeWidget", function( e ){
         toolbar.removeChild(e.detail.remove);
     });
+
+    /**
+     * Insert the html element that is this toolbar
+     *
+     * Do this after adding the tinymce toolbar so that this is below tinymce when both are visible.
+     */
+    document.addEventListener("impressionist:tinymce:init", function (event) {
+        document.body.appendChild(toolbar);
+        impressionist().util.triggerEvent( document, "impressionist:toolbar:init", { toolbar : toolbar } );
+    }, false);
 
 })(document, window);
 

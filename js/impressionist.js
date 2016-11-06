@@ -143,6 +143,7 @@
         script.onreadystatechange = callback;
         script.onload = callback;
         document.head.appendChild(script);
+        return script;
     };
     
     impressionist().util.loadCss = function ( url, callback ) {
@@ -153,6 +154,7 @@
         link.onreadystatechange = callback;
         link.onload = callback;
         document.head.appendChild(link);
+        return link;
     };
     
 })(document, window);
@@ -411,8 +413,8 @@
 
     // impress.js events ///////////////////////////////////////////////////////////////////////////
     
-    document.addEventListener("impressionist:init", function (event) {
-        toolbar = document.getElementById("impressionist-toolbar");
+    document.addEventListener("impressionist:toolbar:init", function (event) {
+        toolbar = event.detail.toolbar;
         addCameraControls( event );
         triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
         activeStep = document.querySelector("#impress .step.active");
@@ -809,6 +811,8 @@
  */
 (function ( document, window ) {
     'use strict';
+    var toolbar;
+    var script;
 
     var tinymceInit = function() {
         window.tinymce.init({
@@ -833,14 +837,15 @@
             'save table contextmenu directionality emoticons template paste textcolor'
             ]
         });
+        impressionist().util.triggerEvent( document, "impressionist:tinymce:init", { script : script, toolbar : toolbar } );
     };
 
 
     document.addEventListener("impressionist:init", function (event) {
         var html = '<div id="tinymce-toolbar"></div>\n';
-        var toolbar = impressionist().util.makeDomElement(html);
+        toolbar = impressionist().util.makeDomElement(html);
         document.body.appendChild(toolbar);
-        impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
+        script = impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
     }, false);
 
 })(document, window);
@@ -858,7 +863,6 @@
     // we add this toolbar without asking permission. Assumption is that since you're using impressionist, you want this.
     var toolbar = document.createElement("DIV");
     toolbar.id = "impressionist-toolbar";
-    document.body.appendChild(toolbar);
     var groups = [];
 
     /**
@@ -936,6 +940,16 @@
     toolbar.addEventListener("impressionist:toolbar:removeWidget", function( e ){
         toolbar.removeChild(e.detail.remove);
     });
+
+    /**
+     * Insert the html element that is this toolbar
+     *
+     * Do this after adding the tinymce toolbar so that this is below tinymce when both are visible.
+     */
+    document.addEventListener("impressionist:tinymce:init", function (event) {
+        document.body.appendChild(toolbar);
+        impressionist().util.triggerEvent( document, "impressionist:toolbar:init", { toolbar : toolbar } );
+    }, false);
 
 })(document, window);
 

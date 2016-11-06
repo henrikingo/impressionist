@@ -38,4 +38,14 @@
         document.head.appendChild(script);
     };
     
+    impressionist().util.loadCss = function ( url, callback ) {
+        var link = document.createElement("link");
+        link.href = url;
+        link.rel = "stylesheet";
+        link.type = "text/css";
+        link.onreadystatechange = callback;
+        link.onload = callback;
+        document.head.appendChild(link);
+    };
+    
 })(document, window);

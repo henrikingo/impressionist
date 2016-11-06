@@ -145,6 +145,16 @@
         document.head.appendChild(script);
     };
     
+    impressionist().util.loadCss = function ( url, callback ) {
+        var link = document.createElement("link");
+        link.href = url;
+        link.rel = "stylesheet";
+        link.type = "text/css";
+        link.onreadystatechange = callback;
+        link.onload = callback;
+        document.head.appendChild(link);
+    };
+    
 })(document, window);
 
 /**
@@ -773,6 +783,19 @@
             });
         });
     }
+
+})(document, window);
+
+/**
+ * Load impressionist.css
+ *
+ * Copyright 2016 Henrik Ingo (@henrikingo)
+ * Released under the MIT license.
+ */
+(function ( document, window ) {
+    'use strict';
+    // Just load it ASAP. No need to wait for impressionist:init
+    impressionist().util.loadCss(process.resourcesPath + "/../../../../css/impressionist.css");
 
 })(document, window);
 

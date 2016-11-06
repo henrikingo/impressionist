@@ -13,6 +13,7 @@ buildify()
            'src/plugins/camera/camera.js',
            'src/plugins/cameracontrols/cameracontrols.js',
            'src/plugins/electron/electron.js',
+           'src/plugins/loadcss/loadcss.js',
            'src/plugins/tinymce/tinymce.js',
            'src/plugins/toolbar/toolbar.js'])
   .save('js/impressionist.js')

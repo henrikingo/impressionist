@@ -233,8 +233,8 @@
     };
 
     // API for other plugins to move the camera position ///////////////////////////////////////////
-    
-    document.addEventListener("impressionist:camera:setCoordinates", function (event) {
+    var gc = impressionist().gc;
+    gc.addEventListener(document, "impressionist:camera:setCoordinates", function (event) {
         var moveTo = event.detail;
         widgetNames.forEach( function( name ) {
             if ( moveTo[name] === undefined ) return; // continue, but in JS forEach is a function
@@ -248,36 +248,36 @@
         });
         updateWidgets();
         updateCanvasPosition();
-    }, false);
+    });
 
     // impress.js events ///////////////////////////////////////////////////////////////////////////
     
-    document.addEventListener("impressionist:toolbar:init", function (event) {
+    gc.addEventListener(document, "impressionist:toolbar:init", function (event) {
         toolbar = event.detail.toolbar;
         addCameraControls( event );
         triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
         activeStep = document.querySelector("#impress .step.active");
         getActiveStepCoordinates(activeStep);
         updateWidgets();
-    }, false);
+    });
     
     // If user moves to another step with impress().prev() / .next() or .goto(), then the canvas
     // will be set according to that step. We update our widgets to reflect reality.
     // From here, user can again zoom out or pan away as he prefers.
-    document.addEventListener("impress:stepenter", function (event) {
+    gc.addEventListener(document, "impress:stepenter", function (event) {
         activeStep = event.target;
         getActiveStepCoordinates(activeStep);
         updateWidgets();
-    }, false);
+    });
 
     // impress.js also resets the css coordinates when a window is resized event. Wait a second,
     // then update widgets to match reality.
-    window.addEventListener("resize", function () {
+    gc.addEventListener(window, "resize", function () {
         window.setTimeout( function(){
             getActiveStepCoordinates(activeStep);
             updateWidgets();
         }, 1000 );
-    }, false);
+    });
     
 })(document, window);
 

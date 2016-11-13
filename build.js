@@ -6,6 +6,7 @@ buildify()
   .load('src/impressionist.js')
   // Libraries that are made available early, used by other plugins
   .concat(['src/lib/css3.js',
+           'src/lib/gc.js',
            'src/lib/util.js'])
   // Plugins provide features
   .concat([

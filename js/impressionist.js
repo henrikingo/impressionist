@@ -106,6 +106,90 @@
 })(document, window);
 
 /**
+ * Garbage collection utility
+ *
+ * Impressionist features that add their own elements to the DOM of a presentation, can register
+ * those elements with the garbage collector. The garbage collector will then remove them when
+ * the document is saved, so that there's no trace of impressionist left in the document.
+ *
+ * Henrik Ingo (c) 2016
+ * MIT License
+ */
+(function ( document, window ) {
+    'use strict';
+
+    var elementList = [];
+    var eventListenerList = [];
+
+    if( impressionist().gc === undefined ){
+        impressionist().gc = {}
+    }
+
+    impressionist().gc.pushElement = function ( element ) {
+        elementList.push(element);
+    };
+
+    // Convenience wrapper that combines DOM appendChild with gc.pushElement
+    impressionist().gc.appendChild = function ( parent, element ) {
+        parent.appendChild(element);
+        impressionist().gc.pushElement(element);
+    };
+
+    impressionist().gc.pushEventListener = function ( target, type, listenerFunction ) {
+        eventListenerList.push( {target:target, type:type, listener:listenerFunction} );
+    };
+
+    // Convenience wrapper that combines DOM addEventListener with gc.pushEventListener
+    impressionist().gc.addEventListener = function ( target, type, listenerFunction ) {
+        target.addEventListener( type, listenerFunction );
+        impressionist().gc.pushEventListener( target, type, listenerFunction );
+    };
+
+    impressionist().gc.removeAll = function () {
+        tinymceCssHack();
+        for ( var i in elementList ) {
+            elementList[i].parentElement.removeChild(elementList[i]);
+        }
+        elementList = [];
+        for ( var i in eventListenerList ) {
+            var target   = eventListenerList[i].target;
+            var type     = eventListenerList[i].type;
+            var listener = eventListenerList[i].listener;
+            target.removeEventListener(type, listener);
+        }
+    };
+
+    // These css are added by tinymce asynchronously, and it doesn't provide a callback
+    // api where I could do this when they're added. So we just capture them here, right before
+    // we're going to call removeChild() on them.
+    var tinymceCssHack = function () {
+        var css1 = "skins/lightgray/skin.min.css";
+        var css2 = "skins/lightgray/content.inline.min.css";
+        var links = document.head.querySelectorAll("link");
+        for (var i = 0; i < links.length; i++){
+            var l = links[i];
+            if( l.href.substring( l.href.length - css1.length ) == css1 || 
+                l.href.substring( l.href.length - css2.length ) == css2 ){
+                impressionist().gc.pushElement(l);
+            }
+        }
+
+        var style = document.getElementById("mceDefaultStyles");
+        impressionist().gc.pushElement(style);
+
+        var metas = document.head.querySelectorAll("meta");
+        for (var i = 0; i < metas.length; i++){
+            var m = metas[i];
+            if( m.name == "viewport" &&
+                m.content == "width=device-width, minimum-scale=1, maximum-scale=1, user-scalable=no" ) {
+                impressionist().gc.pushElement(m);
+            }
+        };
+    };
+
+})(document, window);
+
+/**
  * Utilities library functions
  *
  * Henrik Ingo (c) 2016
@@ -394,8 +478,8 @@
     };
 
     // API for other plugins to move the camera position ///////////////////////////////////////////
-    
-    document.addEventListener("impressionist:camera:setCoordinates", function (event) {
+    var gc = impressionist().gc;
+    gc.addEventListener(document, "impressionist:camera:setCoordinates", function (event) {
         var moveTo = event.detail;
         widgetNames.forEach( function( name ) {
             if ( moveTo[name] === undefined ) return; // continue, but in JS forEach is a function
@@ -409,36 +493,36 @@
         });
         updateWidgets();
         updateCanvasPosition();
-    }, false);
+    });
 
     // impress.js events ///////////////////////////////////////////////////////////////////////////
     
-    document.addEventListener("impressionist:toolbar:init", function (event) {
+    gc.addEventListener(document, "impressionist:toolbar:init", function (event) {
         toolbar = event.detail.toolbar;
         addCameraControls( event );
         triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
         activeStep = document.querySelector("#impress .step.active");
         getActiveStepCoordinates(activeStep);
         updateWidgets();
-    }, false);
+    });
     
     // If user moves to another step with impress().prev() / .next() or .goto(), then the canvas
     // will be set according to that step. We update our widgets to reflect reality.
     // From here, user can again zoom out or pan away as he prefers.
-    document.addEventListener("impress:stepenter", function (event) {
+    gc.addEventListener(document, "impress:stepenter", function (event) {
         activeStep = event.target;
         getActiveStepCoordinates(activeStep);
         updateWidgets();
-    }, false);
+    });
 
     // impress.js also resets the css coordinates when a window is resized event. Wait a second,
     // then update widgets to match reality.
-    window.addEventListener("resize", function () {
+    gc.addEventListener(window, "resize", function () {
         window.setTimeout( function(){
             getActiveStepCoordinates(activeStep);
             updateWidgets();
         }, 1000 );
-    }, false);
+    });
     
 })(document, window);
 
@@ -458,6 +542,7 @@
     var myWidgets = {};
     var rotationAxisLock = {x:false, y:false, z:false};
     var util = impressionist().util;
+    var gc = impressionist().gc;
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
@@ -508,14 +593,14 @@
             updateCameraCoordinatesFiber(); // start fiber
         });
         
-        document.addEventListener( "mouseup", function( event ) {
+        gc.addEventListener( document, "mouseup", function( event ) {
             stopDrag();
         });
-        document.addEventListener( "mouseleave", function( event ) {
+        gc.addEventListener( document, "mouseleave", function( event ) {
             stopDrag();
         });
         
-        document.addEventListener( "mousemove", function( event ) {
+        gc.addEventListener( document, "mousemove", function( event ) {
             if( myWidgets.xy.drag ) {
                 myWidgets.xy.drag.current.x = event.clientX;
                 myWidgets.xy.drag.current.y = event.clientY;
@@ -621,13 +706,13 @@
     };
     
     // Reset rotationAxisLock whenever entering a new step
-    document.addEventListener("impress:stepenter", function (event) {
+    gc.addEventListener(document, "impress:stepenter", function (event) {
         resetRotationAxisLock();
     });
     
     // Wait for camera plugin to initialize first
     
-    document.addEventListener("impressionist:camera:init", function (event) {
+    gc.addEventListener(document, "impressionist:camera:init", function (event) {
         cameraCoordinates = event.detail.widgets;
         // Reset rotationAxisLock if the order field was manually edited
         cameraCoordinates.order.input.addEventListener("input", function (event) {
@@ -774,15 +859,24 @@
     'use strict';
 
     // Return the entire document when requested
-    // TODO: We need to actually remove the impressionist and tinymce controls first and return just the impress.js bits
     if( window.require ){
         var ipc = require('electron').ipcRenderer;
         ipc.on('impressionist-get-documentElement', function (event, filename) {
+            // Remove DOM elements added by impressionist itself (toolbars, tinymce)
+            impressionist().gc.removeAll();
+
             ipc.send('impressionist-return-documentElement', {
                 filename: filename,
                 // TODO: I have no idea why the closing </html> is missing from innerHTML
                 documentElement: document.documentElement.innerHTML + "\n</html>"
             });
+
+            // Aaannd then we load the impressionist bits right back to where they were
+            var script = impressionist().util.loadJavaScript(
+                process.resourcesPath + "/../../../../js/impressionist.js", function(){
+                    impressionist().gc.pushElement(script); // The circle of life :-)
+                    impressionist().util.triggerEvent(document, "impressionist:init", {}) 
+                });
         });
     }
 
@@ -797,7 +891,8 @@
 (function ( document, window ) {
     'use strict';
     // Just load it ASAP. No need to wait for impressionist:init
-    impressionist().util.loadCss(process.resourcesPath + "/../../../../css/impressionist.css");
+    var link = impressionist().util.loadCss(process.resourcesPath + "/../../../../css/impressionist.css");
+    impressionist().gc.pushElement(link);
 
 })(document, window);
 
@@ -813,9 +908,23 @@
     'use strict';
     var toolbar;
     var script;
+    var gc = impressionist().gc;
+
+    var tinymceOnInitDone = false;
+
+    var tinymceOnInit = function() {
+        if ( !tinymceOnInitDone ) {
+            tinymceOnInitDone = true;
+            // TODO: This is now done as the first editor instance completed init.
+            // Someone might expect that we would only trigger this event once all editors did init.
+            // That would be complex, and nobody needs that now, so I didn't do that.
+            impressionist().util.triggerEvent( document, "impressionist:tinymce:init", { script : script, toolbar : toolbar } );
+        }
+    };
 
     var tinymceInit = function() {
         window.tinymce.init({
+            setup: function(ed) { ed.on('init', tinymceOnInit); },
             inline: true,
             selector: '.step',
             theme: 'modern',
@@ -837,16 +946,16 @@
             'save table contextmenu directionality emoticons template paste textcolor'
             ]
         });
-        impressionist().util.triggerEvent( document, "impressionist:tinymce:init", { script : script, toolbar : toolbar } );
     };
 
 
-    document.addEventListener("impressionist:init", function (event) {
+    gc.addEventListener(document, "impressionist:init", function (event) {
         var html = '<div id="tinymce-toolbar"></div>\n';
         toolbar = impressionist().util.makeDomElement(html);
-        document.body.appendChild(toolbar);
+        gc.appendChild(document.body, toolbar);
         script = impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
-    }, false);
+        impressionist().gc.pushElement(script);
+    });
 
 })(document, window);
 
@@ -864,6 +973,7 @@
     var toolbar = document.createElement("DIV");
     toolbar.id = "impressionist-toolbar";
     var groups = [];
+    var gc = impressionist().gc;
 
     /**
      * Get the span element that is a child of toolbar, identified by index.
@@ -946,10 +1056,10 @@
      *
      * Do this after adding the tinymce toolbar so that this is below tinymce when both are visible.
      */
-    document.addEventListener("impressionist:tinymce:init", function (event) {
-        document.body.appendChild(toolbar);
+    gc.addEventListener(document, "impressionist:tinymce:init", function (event) {
+        gc.appendChild(document.body, toolbar);
         impressionist().util.triggerEvent( document, "impressionist:toolbar:init", { toolbar : toolbar } );
-    }, false);
+    });
 
 })(document, window);
 

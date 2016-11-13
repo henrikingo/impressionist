@@ -13,6 +13,7 @@
     var myWidgets = {};
     var rotationAxisLock = {x:false, y:false, z:false};
     var util = impressionist().util;
+    var gc = impressionist().gc;
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
@@ -63,14 +64,14 @@
             updateCameraCoordinatesFiber(); // start fiber
         });
         
-        document.addEventListener( "mouseup", function( event ) {
+        gc.addEventListener( document, "mouseup", function( event ) {
             stopDrag();
         });
-        document.addEventListener( "mouseleave", function( event ) {
+        gc.addEventListener( document, "mouseleave", function( event ) {
             stopDrag();
         });
         
-        document.addEventListener( "mousemove", function( event ) {
+        gc.addEventListener( document, "mousemove", function( event ) {
             if( myWidgets.xy.drag ) {
                 myWidgets.xy.drag.current.x = event.clientX;
                 myWidgets.xy.drag.current.y = event.clientY;
@@ -176,13 +177,13 @@
     };
     
     // Reset rotationAxisLock whenever entering a new step
-    document.addEventListener("impress:stepenter", function (event) {
+    gc.addEventListener(document, "impress:stepenter", function (event) {
         resetRotationAxisLock();
     });
     
     // Wait for camera plugin to initialize first
     
-    document.addEventListener("impressionist:camera:init", function (event) {
+    gc.addEventListener(document, "impressionist:camera:init", function (event) {
         cameraCoordinates = event.detail.widgets;
         // Reset rotationAxisLock if the order field was manually edited
         cameraCoordinates.order.input.addEventListener("input", function (event) {

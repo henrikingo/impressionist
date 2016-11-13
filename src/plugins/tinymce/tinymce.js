@@ -10,9 +10,23 @@
     'use strict';
     var toolbar;
     var script;
+    var gc = impressionist().gc;
+
+    var tinymceOnInitDone = false;
+
+    var tinymceOnInit = function() {
+        if ( !tinymceOnInitDone ) {
+            tinymceOnInitDone = true;
+            // TODO: This is now done as the first editor instance completed init.
+            // Someone might expect that we would only trigger this event once all editors did init.
+            // That would be complex, and nobody needs that now, so I didn't do that.
+            impressionist().util.triggerEvent( document, "impressionist:tinymce:init", { script : script, toolbar : toolbar } );
+        }
+    };
 
     var tinymceInit = function() {
         window.tinymce.init({
+            setup: function(ed) { ed.on('init', tinymceOnInit); },
             inline: true,
             selector: '.step',
             theme: 'modern',
@@ -34,15 +48,15 @@
             'save table contextmenu directionality emoticons template paste textcolor'
             ]
         });
-        impressionist().util.triggerEvent( document, "impressionist:tinymce:init", { script : script, toolbar : toolbar } );
     };
 
 
-    document.addEventListener("impressionist:init", function (event) {
+    gc.addEventListener(document, "impressionist:init", function (event) {
         var html = '<div id="tinymce-toolbar"></div>\n';
         toolbar = impressionist().util.makeDomElement(html);
-        document.body.appendChild(toolbar);
+        gc.appendChild(document.body, toolbar);
         script = impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
-    }, false);
+        impressionist().gc.pushElement(script);
+    });
 
 })(document, window);

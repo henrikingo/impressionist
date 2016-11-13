@@ -12,6 +12,7 @@
     var toolbar = document.createElement("DIV");
     toolbar.id = "impressionist-toolbar";
     var groups = [];
+    var gc = impressionist().gc;
 
     /**
      * Get the span element that is a child of toolbar, identified by index.
@@ -94,10 +95,10 @@
      *
      * Do this after adding the tinymce toolbar so that this is below tinymce when both are visible.
      */
-    document.addEventListener("impressionist:tinymce:init", function (event) {
-        document.body.appendChild(toolbar);
+    gc.addEventListener(document, "impressionist:tinymce:init", function (event) {
+        gc.appendChild(document.body, toolbar);
         impressionist().util.triggerEvent( document, "impressionist:toolbar:init", { toolbar : toolbar } );
-    }, false);
+    });
 
 })(document, window);
 

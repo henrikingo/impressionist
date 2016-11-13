@@ -9,6 +9,7 @@
 (function ( document, window ) {
     'use strict';
     var root;
+    var gc = impressionist().gc;
     
     var triggerEvent = function (el, eventName, detail) {
         var event = document.createEvent("CustomEvent");
@@ -28,20 +29,19 @@
     // Use .skip to omit these steps from navigation, and impress:navigation-ui:hideStep to hide them from the select widget.
     var x = makeDomElement( '<div id="impressionist-axis-x" class="step skip impressionist"'
                             + ' data-x="0" data-y="0" data-z="0"></div>' );
-    root.appendChild(x);
+    gc.appendChild(root, x);
     var y = makeDomElement( '<div id="impressionist-axis-y" class="step skip impressionist"'
                             + ' data-x="0" data-y="0" data-z="0" data-rotate-z="90"></div>' );
-    root.appendChild(y);
+    gc.appendChild(root, y);
     var z = makeDomElement( '<div id="impressionist-axis-z" class="step skip impressionist"'
                             + ' data-x="0" data-y="0" data-z="0" data-rotate-y="90"></div>' );
-    root.appendChild(z);
+    gc.appendChild(root, z);
 
     // Wait until everyone is initialized before trying to communicate API calls
-    document.addEventListener("impressionist:init", function( event ){
+    gc.addEventListener(document, "impressionist:init", function( event ){
         triggerEvent( x, "impress:navigation-ui:hideStep", {} );
         triggerEvent( y, "impress:navigation-ui:hideStep", {} );
         triggerEvent( z, "impress:navigation-ui:hideStep", {} );
-    }, false);
+    });
 
 })(document, window);
-

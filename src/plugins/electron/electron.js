@@ -10,15 +10,24 @@
     'use strict';
 
     // Return the entire document when requested
-    // TODO: We need to actually remove the impressionist and tinymce controls first and return just the impress.js bits
     if( window.require ){
         var ipc = require('electron').ipcRenderer;
         ipc.on('impressionist-get-documentElement', function (event, filename) {
+            // Remove DOM elements added by impressionist itself (toolbars, tinymce)
+            impressionist().gc.removeAll();
+
             ipc.send('impressionist-return-documentElement', {
                 filename: filename,
                 // TODO: I have no idea why the closing </html> is missing from innerHTML
                 documentElement: document.documentElement.innerHTML + "\n</html>"
             });
+
+            // Aaannd then we load the impressionist bits right back to where they were
+            var script = impressionist().util.loadJavaScript(
+                process.resourcesPath + "/../../../../js/impressionist.js", function(){
+                    impressionist().gc.pushElement(script); // The circle of life :-)
+                    impressionist().util.triggerEvent(document, "impressionist:init", {}) 
+                });
         });
     }
 

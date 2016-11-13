@@ -47,7 +47,6 @@ ipc.on('impressionist-return-documentElement', function(event, data){
       if(err){
           console.log("An error ocurred creating the file "+ err.message)
       }
-      console.log(`${data.filename} has been succesfully saved`);
   })
 })
 

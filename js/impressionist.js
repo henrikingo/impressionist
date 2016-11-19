@@ -176,15 +176,6 @@
 
         var style = document.getElementById("mceDefaultStyles");
         impressionist().gc.pushElement(style);
-
-        var metas = document.head.querySelectorAll("meta");
-        for (var i = 0; i < metas.length; i++){
-            var m = metas[i];
-            if( m.name == "viewport" &&
-                m.content == "width=device-width, minimum-scale=1, maximum-scale=1, user-scalable=no" ) {
-                impressionist().gc.pushElement(m);
-            }
-        };
     };
 
 })(document, window);

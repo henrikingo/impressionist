@@ -855,6 +855,7 @@
         ipc.on('impressionist-get-documentElement', function (event, filename) {
             // Remove DOM elements added by impressionist itself (toolbars, tinymce)
             impressionist().gc.removeAll();
+            impress().tear();
 
             ipc.send('impressionist-return-documentElement', {
                 filename: filename,
@@ -862,7 +863,8 @@
                 documentElement: document.documentElement.innerHTML + "\n</html>"
             });
 
-            // Aaannd then we load the impressionist bits right back to where they were
+            // Aaannd then we reload impress and put the impressionist bits right back to where they were
+            impress().init();
             var script = impressionist().util.loadJavaScript(
                 process.resourcesPath + "/../../../../js/impressionist.js", function(){
                     impressionist().gc.pushElement(script); // The circle of life :-)

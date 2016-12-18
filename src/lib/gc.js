@@ -66,6 +66,23 @@
                 impressionist().gc.pushElement(l);
             }
         }
+        
+        var mceElements = document.querySelectorAll(".mce-content-body")
+        for ( var i = 0; i < mceElements.length; i++ ) {
+            mceElements[i].classList.remove("mce-content-body");
+            mceElements[i].classList.remove("mce-edit-focus");
+            mceElements[i].removeAttribute("contenteditable");
+            mceElements[i].removeAttribute("spellcheck");
+        }
+        var mceElements = document.querySelectorAll(".mce-widget")
+        for ( var i = 0; i < mceElements.length; i++ ) {
+            mceElements[i].parentElement.removeChild(mceElements[i]);
+        }
+        var mceElements = document.querySelectorAll(".mce-container")
+        for ( var i = 0; i < mceElements.length; i++ ) {
+            mceElements[i].parentElement.removeChild(mceElements[i]);
+        }
+        document.body.removeAttribute("spellcheck");
 
         var style = document.getElementById("mceDefaultStyles");
         impressionist().gc.pushElement(style);

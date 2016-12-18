@@ -173,6 +173,23 @@
                 impressionist().gc.pushElement(l);
             }
         }
+        
+        var mceElements = document.querySelectorAll(".mce-content-body")
+        for ( var i = 0; i < mceElements.length; i++ ) {
+            mceElements[i].classList.remove("mce-content-body");
+            mceElements[i].classList.remove("mce-edit-focus");
+            mceElements[i].removeAttribute("contenteditable");
+            mceElements[i].removeAttribute("spellcheck");
+        }
+        var mceElements = document.querySelectorAll(".mce-widget")
+        for ( var i = 0; i < mceElements.length; i++ ) {
+            mceElements[i].parentElement.removeChild(mceElements[i]);
+        }
+        var mceElements = document.querySelectorAll(".mce-container")
+        for ( var i = 0; i < mceElements.length; i++ ) {
+            mceElements[i].parentElement.removeChild(mceElements[i]);
+        }
+        document.body.removeAttribute("spellcheck");
 
         var style = document.getElementById("mceDefaultStyles");
         impressionist().gc.pushElement(style);
@@ -943,9 +960,11 @@
 
 
     gc.addEventListener(document, "impressionist:init", function (event) {
-        var html = '<div id="tinymce-toolbar"></div>\n';
+        var html = '<div id="tinymce-toolbar"></div>';
         toolbar = impressionist().util.makeDomElement(html);
+        console.log(document.body.innerHTML.toString());
         gc.appendChild(document.body, toolbar);
+        console.log(document.body.innerHTML.toString());
         script = impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
         impressionist().gc.pushElement(script);
     });
@@ -1051,6 +1070,7 @@
      */
     gc.addEventListener(document, "impressionist:tinymce:init", function (event) {
         gc.appendChild(document.body, toolbar);
+        console.log(document.body.innerHTML.toString());
         impressionist().util.triggerEvent( document, "impressionist:toolbar:init", { toolbar : toolbar } );
     });
 

@@ -16,11 +16,11 @@
             // Remove DOM elements added by impressionist itself (toolbars, tinymce)
             impressionist().gc.removeAll();
             impress().tear();
+            trimLastChild();
 
             ipc.send('impressionist-return-documentElement', {
                 filename: filename,
-                // TODO: I have no idea why the closing </html> is missing from innerHTML
-                documentElement: document.documentElement.innerHTML + "\n</html>"
+                documentElement: document.documentElement.outerHTML
             });
 
             // Aaannd then we reload impress and put the impressionist bits right back to where they were
@@ -32,5 +32,35 @@
                 });
         });
     }
+
+    /**
+    * Trim Newlines from the lastChild of body
+    *
+    * For reasons I don't know, Google Chrome, and therefore Electron as well, adds 1-2 newlines
+    * to the end of the body of any html page it opens. You can see this by simply typing in the
+    * javascript console of a simple test page:
+    *
+    *      document.documentElement.innerHTML.toString()
+    *
+    * or
+    *
+    *      document.body.lastChild.nodeValue
+    *
+    * This is a bit annoying if we're gonna open and save a html document in Electron. For each time
+    * we'd open and save a particular file, it would add newlines to the end of itself, causing the
+    * file to grow indefinitively.
+    *
+    * To avoid this, we trim extra newlines from the end of the file.
+    */
+    var trimLastChild = function() {
+        while ( true ) {
+            var end = document.body.lastChild;
+            if (end.nodeType != 3) break;
+            end = end.nodeValue;
+            if ( end.slice(-3) != "\n\n\n" ) break;
+            // Trim one newline from the end
+            document.body.lastChild.nodeValue = end.slice(0,-1);
+        }
+    };
 
 })(document, window);

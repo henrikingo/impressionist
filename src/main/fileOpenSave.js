@@ -43,8 +43,9 @@ var fileSaveAs = function() {
   })
 }
 ipc.on('impressionist-return-documentElement', function(event, data){
-  fs.writeFile(data.filename, data.documentElement, function (err) {
+  fs.writeFile(data.filename, data.documentElement + "\n", function (err) {
       if(err){
+          // TODO: Show a dialog box
           console.log("An error ocurred creating the file "+ err.message)
       }
   })

@@ -13,6 +13,7 @@
 
     var elementList = [];
     var eventListenerList = [];
+    var id = Math.random();
 
     if( impressionist().gc === undefined ){
         impressionist().gc = {}

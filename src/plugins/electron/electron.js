@@ -11,8 +11,7 @@
 
     // Return the entire document when requested
     if( window.require ){
-        var ipc = require('electron').ipcRenderer;
-        ipc.on('impressionist-get-documentElement', function (event, filename) {
+        var getDocumentElement = function (event, filename) {
             // Remove DOM elements added by impressionist itself (toolbars, tinymce)
             impressionist().gc.removeAll();
             impress().tear();
@@ -30,7 +29,11 @@
                     impressionist().gc.pushElement(script); // The circle of life :-)
                     impressionist().util.triggerEvent(document, "impressionist:init", {}) 
                 });
-        });
+        };
+        var ipc = require('electron').ipcRenderer;
+        // Each call to getDocumentElement will end with re-adding impressionist.js script element
+        // Thus causing a fresh copy of getDocumentElement itself to be registered as listener
+        ipc.once('impressionist-get-documentElement', getDocumentElement);
     }
 
     /**

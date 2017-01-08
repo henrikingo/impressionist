@@ -68,13 +68,6 @@
     };
 
 
-    // Create widgets and add them to the impressionist toolbar //////////////////////////////////
-    var triggerEvent = function (el, eventName, detail) {
-        var event = document.createEvent("CustomEvent");
-        event.initCustomEvent(eventName, true, true, detail);
-        el.dispatchEvent(event);
-    };
-
     // Helper function to set the right path in `coordinates` object, given a name from widgetNames
     var setCoordinate = function( name, value ) {
         if ( name.length == 1 ) { // x, y, z
@@ -142,7 +135,7 @@
                                           'class="impressionist-camera impressionist-camera-minus">-</button>' + 
                                           '<button id="impressionist-camera-' + name + '-plus" ' +
                                           'class="impressionist-camera impressionist-camera-plus">+</button> </span>' );
-            triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : element } );
+            util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : element } );
             
             var input = element.firstElementChild;
             var minus = input.nextSibling;
@@ -255,7 +248,7 @@
     gc.addEventListener(document, "impressionist:toolbar:init", function (event) {
         toolbar = event.detail.toolbar;
         addCameraControls( event );
-        triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
+        util.triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
         activeStep = document.querySelector("#impress .step.active");
         getActiveStepCoordinates(activeStep);
         updateWidgets();

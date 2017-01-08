@@ -27,6 +27,7 @@
     };
 
     var addCameraControls = function() {
+        util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: 0, title: "Camera" } )
         myWidgets.xy = util.makeDomElement( '<button id="impressionist-cameracontrols-xy" title="Pan camera left-right, up-down">+</button>' );
         myWidgets.z  = util.makeDomElement( '<button id="impressionist-cameracontrols-z" title="Zoom in-out = up-down, rotate = left-right">Z</button>' );
         myWidgets.rotateXY = util.makeDomElement( '<button id="impressionist-cameracontrols-rotate" title="Rotate camera left-right, up-down">O</button>' );
@@ -225,8 +226,8 @@
     // order=xyz) two axes can collapse into one, so we lose a dimension and no amount of sin()*cos()
     // is able to do anything about that. So instead with rotations the strategy is just to move
     // the axis currently being rotated to be last. This is trivial if the current rotation around
-    // that axis is 0. If it already has a value, we need to "drain" it to zero first, by computing
-    // and adding an equivalent rotation added to the other axes.
+    // that axis is 0. If it is non-zero, we can not do anything, but leave the order as it is
+    // and just rotate anyway. This can often look odd to the user. Sorry.
     var coordinateTransformation = function(diff){
         var deg = function(rad) {
           return rad * (180 / Math.PI);

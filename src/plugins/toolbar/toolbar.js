@@ -11,7 +11,16 @@
     // we add this toolbar without asking permission. Assumption is that since you're using impressionist, you want this.
     var toolbar = document.createElement("DIV");
     toolbar.id = "impressionist-toolbar";
+    // If groups are given titles, they are rendered as tabs, with the title as the tab name.
+    var groupTitles = [];
+    var groupTitlesDiv = document.createElement("DIV");
+    groupTitlesDiv.id = "impressionist-toolbar-titles";
+    toolbar.appendChild(groupTitlesDiv);
+    // Toolbar widgets that belong together, are added to a group in the toolbar. Groups are rendered in index order.
     var groups = [];
+    var groupDiv = document.createElement("DIV");
+    groupDiv.id = "impressionist-toolbar-groups";
+    toolbar.appendChild(groupDiv);
     var gc = impressionist().gc;
 
     /**
@@ -29,17 +38,20 @@
         if(!groups[index]){
             groups[index] = document.createElement("span");
             groups[index].id = id;
+            if ( groupTitles.length > 0 && currentTab != index ) {
+                groups[index].style.display = "none";
+            }
             var nextIndex = getNextGroupIndex(index);
             if ( nextIndex === undefined ){
-                toolbar.appendChild(groups[index]);
+                groupDiv.appendChild(groups[index]);
             }
             else{
-                toolbar.insertBefore(groups[index], groups[nextIndex]);
+                groupDiv.insertBefore(groups[index], groups[nextIndex]);
             }
         }
         return groups[index];
     };
-    
+
     /**
      * Get the span element from groups[] that is immediately after given index.
      *
@@ -59,11 +71,64 @@
         }
     };
 
+    /**
+     * Event listener for the buttons that make a tab visible (generator function)
+     */
+    var currentTab = 0;
+    var showTabGenerator = function(index){
+        return function(e){
+            // Hide currentTab
+            if ( currentTab !== undefined ) {
+                groups[currentTab].style.display = "none";
+            }
+            // For this tab, show it or if it was already showing, leave it hidden (toggle)
+            if ( index != currentTab ) {
+                groupDiv.style.display = "block";
+                groups[index].style.display = "inline";
+                currentTab = index;
+            }
+            else {
+                groupDiv.style.display = "none";
+                currentTab = undefined;
+            }
+        };
+    };
+
     // API
     // Other plugins can add and remove buttons by sending them as events.
-    // In return, toolbar plugin will trigger events when button was added.
+    // In return, toolbar plugin will trigger events when widget was added.
+    /**
+     * Give a name to a group.
+     *
+     * The name is used as the title for the tab that the group is rendered as.
+     *
+     * :param: e.detail.group   integer specifying which group the title is for
+     * :param: e.detail.title   the title to be used for the group
+     */
+    toolbar.addEventListener("impressionist:toolbar:groupTitle", function( e ){
+        var index = e.detail.group;
+        var isNew = groupTitles[index] === undefined;
+        if ( isNew ){
+            // Create the corresponding tab title
+            var nextIndex = getNextGroupIndex(index);
+            groupTitles[index] = document.createElement("button");
+            groupTitles[index].id = "impressionist-toolbar-group-" + index + "-title";
+            if ( nextIndex === undefined ){
+                groupTitlesDiv.appendChild(groupTitles[index]);
+            }
+            else{
+                groupTitlesDiv.insertBefore(groupsTitles[index], groups[nextIndex]);
+            }
+            groupTitles[index].addEventListener("click", showTabGenerator(index));
+        }
+        groupTitles[index].innerHTML = e.detail.title;
+    });
+
     /**
      * Append a widget inside toolbar span element identified by given group index.
+     *
+     * Note: When groupTitles are given, the toolbar groups become tabs. In this case group #0
+     * is the one shown initially.
      *
      * :param: e.detail.group    integer specifying the span element where widget will be placed
      * :param: e.detail.element  a dom element to add to the toolbar

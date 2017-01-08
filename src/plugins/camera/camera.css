@@ -10,8 +10,8 @@
   background: none;
 
   position: relative;
-  top: 17px;
-  left: -52px;
+  top: 15px;
+  left: -47px;
 }
 
 /* Cut away the empty space left by the plus and minus buttons as they were relatively positioned elsewhere. */

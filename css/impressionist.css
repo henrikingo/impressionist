@@ -17,8 +17,8 @@
   background: none;
 
   position: relative;
-  top: 17px;
-  left: -52px;
+  top: 15px;
+  left: -47px;
 }
 
 /* Cut away the empty space left by the plus and minus buttons as they were relatively positioned elsewhere. */
@@ -55,14 +55,29 @@
  * Copyright 2016, Henrik Ingo (@henrikingo)
  * MIT License
  */
- 
+
 /* Many impress.js presentations set pointer-events: none. We must turn them back on for our toolbar. */
 #impressionist-toolbar         {
     pointer-events: auto;
-    opacity: 0.6;
+    opacity: 0.9;
+    color: #000;
 }
 
-#impressionist-toolbar input {
+#impressionist-toolbar-groups {
+    background-color: #fff;
+    padding-bottom: 15px;
+    padding-top: 8px;
+    padding-left: 3px;
+    padding-right: 3px;
+    border-bottom: solid 1px #ddd;
+    border-right: solid 1px #ddd;
+}
+
+#impressionist-toolbar-groups input {
     width: 3em;
     font-size: 80%;
+}
+
+#impressionist-toolbar-titles button {
+    font-size: 70%;
 }

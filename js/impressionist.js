@@ -182,6 +182,12 @@
             mceElements[i].removeAttribute("contenteditable");
             mceElements[i].removeAttribute("spellcheck");
         }
+        var mceElements = document.querySelectorAll("br")
+        for ( var i = 0; i < mceElements.length; i++ ) {
+            if ( mceElements[i].getAttribute("data-mce-bogus") == "1" ) {
+                mceElements[i].parentElement.removeChild(mceElements[i]);
+            }
+        }
         var mceElements = document.querySelectorAll(".mce-widget")
         for ( var i = 0; i < mceElements.length; i++ ) {
             mceElements[i].parentElement.removeChild(mceElements[i]);

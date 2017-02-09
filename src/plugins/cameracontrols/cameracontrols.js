@@ -9,7 +9,7 @@
 (function ( document, window ) {
     'use strict';
     var cameraControls;
-    var cameraCoordinates;
+    var coordWidgets = {};
     var myWidgets = {};
     var rotationAxisLock = {x:false, y:false, z:false};
     var util = impressionist().util;
@@ -26,6 +26,26 @@
         return coord;
     };
 
+    // Get active toolbar tab. If neither is active, return the first tab ("camera").
+    var getActiveTab = function() {
+        var selectedTab = document.querySelector("#impressionist-toolbar-titles button.selected");
+        if (selectedTab) {
+            return selectedTab.innerHTML.toLowerCase();
+        }
+        // Just get the first tab (which is "camera")
+        selectedTab = document.querySelector("#impressionist-toolbar-titles button");
+        return selectedTab.innerHTML.toLowerCase();
+    };
+    // Return an order to use, depending on which of camera or step tab is active
+    var getActiveOrder = function() {
+        var activeTab = getActiveTab();
+        if (activeTab) {
+            return coordWidgets[activeTab]["order"].input.value;
+        }
+        return coordWidgets["camera"]["order"].input.value;
+    };
+
+    // This function actually creates and adds the controls
     var addCameraControls = function() {
         myWidgets.xy = util.makeDomElement( '<button id="impressionist-cameracontrols-xy" title="Pan camera left-right, up-down">+</button>' );
         myWidgets.z  = util.makeDomElement( '<button id="impressionist-cameracontrols-z" title="Zoom in-out = up-down, rotate = left-right">Z</button>' );
@@ -36,11 +56,6 @@
         cameraControls.appendChild(myWidgets.z);
         cameraControls.appendChild(myWidgets.rotateXY);
         gc.appendChild(document.body, cameraControls);
-
-        //util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: 0, title: "Navi" } )
-        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.xy } );
-        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.z } );
-        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.rotateXY } );
 
         var initDrag = function(event) {
             var drag = {};
@@ -94,8 +109,11 @@
         });
         
         var updateCameraCoordinatesFiber = function(){
+            var activeWidgets = coordWidgets[getActiveTab()];
+
+            // Now we're all set to calculate the actual diff caused by dragging one of the controls
             var diff = { x:0, y:0, z:0, rotateX:0, rotateY:0, rotateZ:0 };
-            diff.order = cameraCoordinates.order.input.value;
+            diff.order = getActiveOrder();
             var isDragging = false;
             if( myWidgets.xy.drag ) {
                 diff.x = myWidgets.xy.drag.current.x - myWidgets.xy.drag.start.x;
@@ -117,14 +135,14 @@
                 diff = snapToGrid(diff);
                 diff = coordinateTransformation(diff);
                 var moveTo = {};
-                var scale = util.toNumber(cameraCoordinates.scale.input.value, 1);
-                moveTo.x = Number(cameraCoordinates.x.input.value) + diff.x * scale;
-                moveTo.y = Number(cameraCoordinates.y.input.value) + diff.y * scale;
-                moveTo.z = Number(cameraCoordinates.z.input.value) + diff.z * scale;
+                var scale = util.toNumber(activeWidgets.scale.input.value, 1);
+                moveTo.x = Number(activeWidgets.x.input.value) + diff.x * scale;
+                moveTo.y = Number(activeWidgets.y.input.value) + diff.y * scale;
+                moveTo.z = Number(activeWidgets.z.input.value) + diff.z * scale;
                 moveTo.scale = scale + util.toNumber(diff.scale);
-                moveTo.rotateX = Number(cameraCoordinates.rotateX.input.value) - diff.rotateX/10;
-                moveTo.rotateY = Number(cameraCoordinates.rotateY.input.value) + diff.rotateY/10;
-                moveTo.rotateZ = Number(cameraCoordinates.rotateZ.input.value) - diff.rotateZ/10;
+                moveTo.rotateX = Number(activeWidgets.rotateX.input.value) - diff.rotateX/10;
+                moveTo.rotateY = Number(activeWidgets.rotateY.input.value) + diff.rotateY/10;
+                moveTo.rotateZ = Number(activeWidgets.rotateZ.input.value) - diff.rotateZ/10;
                 moveTo.order = diff.order; // Order is not a diff, just set the new value
                 moveTo = round(moveTo);
                 util.triggerEvent(document, "impressionist:camera:setCoordinates", moveTo );
@@ -191,20 +209,34 @@
     // Wait for camera plugin to initialize first
     
     gc.addEventListener(document, "impressionist:camera:init", function (event) {
-        cameraCoordinates = event.detail.widgets;
+        coordWidgets["camera"] = event.detail.widgets;
         // Reset rotationAxisLock if the order field was manually edited
-        cameraCoordinates.order.input.addEventListener("input", function (event) {
+        coordWidgets["camera"].order.input.addEventListener("input", function (event) {
             resetRotationAxisLock();
         });
-        cameraCoordinates.order.plus.addEventListener("click", function (event) {
+        coordWidgets["camera"].order.plus.addEventListener("click", function (event) {
             resetRotationAxisLock();
         });
-        cameraCoordinates.order.minus.addEventListener("click", function (event) {
+        coordWidgets["camera"].order.minus.addEventListener("click", function (event) {
             resetRotationAxisLock();
         });
 
         addCameraControls();
         impressionist().util.triggerEvent( cameraControls, "impressionist:cameracontrols:init" );
+    });
+
+    gc.addEventListener(document, "impressionist:stepmove:init", function (event) {
+        coordWidgets["step"] = event.detail.widgets;
+        // Reset rotationAxisLock if the order field was manually edited
+        coordWidgets["step"].order.input.addEventListener("input", function (event) {
+            resetRotationAxisLock();
+        });
+        coordWidgets["step"].order.plus.addEventListener("click", function (event) {
+            resetRotationAxisLock();
+        });
+        coordWidgets["step"].order.minus.addEventListener("click", function (event) {
+            resetRotationAxisLock();
+        });
     });
 
     // 3d coordinate transformations
@@ -247,10 +279,11 @@
 
         var xyz = diff.order; // Note: This is the old value, not a diff. The only place to change it is this method.
         
+        var activeWidgets = coordWidgets[getActiveTab()];
         var angle = {
-            x: util.toNumber(cameraCoordinates.rotateX.input.value),
-            y: util.toNumber(cameraCoordinates.rotateY.input.value),
-            z: util.toNumber(cameraCoordinates.rotateZ.input.value)
+            x: util.toNumber(activeWidgets.rotateX.input.value),
+            y: util.toNumber(activeWidgets.rotateY.input.value),
+            z: util.toNumber(activeWidgets.rotateZ.input.value)
         };
 
         var computeRotate = {
@@ -288,12 +321,12 @@
         newDiff.z = v[2];
 
         // Rotations
-        // Capture current rotations from cameraCoordinates
+        // Capture current rotations from activeWidgets
         var currentRotations = {};
         for ( var i = 0; i < xyz.length; i++ ) {
             // iterate over rotateX/Y/Z in the order they appear in "order"
             var rotateStr = "rotate" + xyz[i].toUpperCase();
-            currentRotations[xyz[i]] = util.toNumber( cameraCoordinates[rotateStr].input.value );
+            currentRotations[xyz[i]] = util.toNumber( activeWidgets[rotateStr].input.value );
         }
 
         // Controls only allow 1 axis at a time to be rotating. Find out which one, if any.

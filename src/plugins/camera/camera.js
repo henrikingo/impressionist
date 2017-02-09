@@ -24,18 +24,28 @@
 
     // Helper function to set the right path in coordinates[*], given a name from widgetNames
     var setCoordinate = function( cameraOrStep, name, value ) {
-        if ( name.length == 1 ) { // x, y, z
-            coordinates[cameraOrStep].translate[name] = value;
-        }
-        else if ( name == "scale" ) {
-            coordinates[cameraOrStep].scale = value;
-        }
-        else if ( name == "order" ) {
-            coordinates[cameraOrStep].rotate.order = value;
-        }
-        else {
-            var xyz = name.substr(-1).toLowerCase();
-            coordinates[cameraOrStep].rotate[xyz] = value;
+        // Set the named coordinate for both, if the lock widget is checked, otherwise only for cameraOrStep
+        // By default, just update the one supplied
+        var todo = [cameraOrStep];
+        if (cameraStepLocked()) {
+            // If lock is checked, update both
+            todo = ["camera", "step"];
+        };
+
+        for (var i=0; i < todo.length; i++) {
+            if ( name.length == 1 ) { // x, y, z
+                coordinates[todo[i]].translate[name] = value;
+            }
+            else if ( name == "scale" ) {
+                coordinates[todo[i]].scale = value;
+            }
+            else if ( name == "order" ) {
+                coordinates[todo[i]].rotate.order = value;
+            }
+            else {
+                var xyz = name.substr(-1).toLowerCase();
+                coordinates[todo[i]].rotate[xyz] = value;
+            }
         }
     };
     // Helper function to get the right path in coordinates[*] object, given a name from widgetNames
@@ -56,7 +66,10 @@
     };
 
     // Move canvas (aka the camera) to match the coordinates["camera"]
-    var updateCanvasPosition = function() {
+    var updateCanvasPosition = function(transitionDuration, oldScale) {
+        var duration = transitionDuration || 0;
+        var delay = (duration / 2);
+
         var root = document.getElementById("impress");
         var rootData = root.dataset;
         var config = {
@@ -86,18 +99,19 @@
 
         var windowScale = css3.computeWindowScale(config);
         var targetScale = target.scale * windowScale;
+        var zoomin = target.scale >= oldScale; // Copied from impress.js, elaborate commentary over there.
 
         css3.css(root, {
             // to keep the perspective look similar for different scales
             // we need to 'scale' the perspective, too
             transform: css3.perspective( config.perspective / targetScale ) + css3.scale( targetScale ),
-            transitionDuration: "0ms",
-            transitionDelay: "0ms"
+            transitionDuration: duration + "ms",
+            transitionDelay: (zoomin ? delay : 0) + "ms"
         });
         css3.css(canvas, {
             transform: css3.rotate(target.rotate, true) + css3.translate(target.translate),
-            transitionDuration: "0ms",
-            transitionDelay: "0ms"
+            transitionDuration: duration + "ms",
+            transitionDelay: (zoomin ? 0 : delay) + "ms"
         });
     };
 
@@ -208,6 +222,29 @@
         });
     };
 
+    // The lock listener does 2 things
+    // 1. Force the checkboxes on the camera and step tab to be in sync. If one is checked, the other is too.
+    // 2. Update widgets on Camera tab to match the coordinates of the current step
+    var setLockListener = function( widgets, cameraOrStep ) {
+        widgets["lock"].input.addEventListener( "click", function( event ) {
+            // Sync both checkboxes to the value that was set with this click
+            var value = event.target.checked;
+            cameraWidgets["lock"].input.checked = value;
+            stepWidgets["lock"].input.checked = value;
+            // Update widgets with values from current step
+            if ( value == true ) {
+                activeStep = document.querySelector("#impress .step.active");
+                // Need to save the old scale value to be used for a nice zoom delay.
+                // (As impress.js does. Most of camera.js moves around with controls, but here we
+                // want to animate the transition so that user doesn't suddenly jump to a weird place.)
+                var oldScale = getCoordinate( "camera", "scale" );
+                getActiveStepCoordinates(activeStep);
+                updateWidgets();
+                updateCanvasPosition(1000, oldScale);
+            }
+        });
+    };
+
     var createControls = function(cameraOrStep, group, widgets) {
         // Set the text of the tab for this group of widgets
         util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: group, title: util.capitalize(cameraOrStep) } )
@@ -233,12 +270,13 @@
         setOrderListeners( widgets, cameraOrStep );
 
         // Add a checkbox to control whether the + O Z cameracontrols will control camera, step or both
-        var checkbox = util.makeDomElement( '<span class="nocut">controls:' +
-                                            '<input type="checkbox" id="impressionist-' + cameraOrStep + '-cameracontrols" ' +
-                                            'checked="checked" title="Should the + O Z camera controls move the ' +
-                                            cameraOrStep + '?" />' +
-                                            '</span>' );
-        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group: group, element: checkbox });
+        var span = util.makeDomElement( '<span class="nocut">lock:' +
+                                        '<input type="checkbox" id="impressionist-' + cameraOrStep + '-cameracontrols" ' +
+                                        'checked="checked" title="Lock Step coordinates to Camera?" />' +
+                                        '</span>' );
+        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group: group, element: span });
+        widgets["lock"] = { input : span.firstElementChild };
+        setLockListener( widgets, cameraOrStep );
     };
 
     // Update the coordinates objects from the currently activeStep.
@@ -284,18 +322,40 @@
         });
     };
 
+    // Get active toolbar tab. If neither is active, return the first tab ("camera").
+    var getActiveTab = function() {
+        var selectedTab = document.querySelector("#impressionist-toolbar-titles button.selected");
+        if (selectedTab) {
+            return selectedTab.innerHTML.toLowerCase();
+        }
+        // Just get the first tab (which is "camera")
+        selectedTab = document.querySelector("#impressionist-toolbar-titles button");
+        return selectedTab.innerHTML.toLowerCase();
+    };
+
+    // Returns true if the lock checkbox is checked, otherwise false
+    var cameraStepLocked = function() {
+        // cameraWidgets["lock"] and stepWidgets["lock"] are always in sync, doesn't matter which one we check
+        if (cameraWidgets["lock"].input.checked) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    };
+
     // API for other plugins to move the camera position ///////////////////////////////////////////
     var gc = impressionist().gc;
     gc.addEventListener(document, "impressionist:camera:setCoordinates", function (event) {
         var moveTo = event.detail;
+        var activeTab = getActiveTab();
         widgetNames.forEach( function( name ) {
             if ( moveTo[name] === undefined ) return; // continue, but in JS forEach is a function
             if ( name == "order" ) {
-                // TODO: Could do input sanitization here, but for now we actually trust the plugins that will use this so...
-                setCoordinate( "camera", name, moveTo[name] );
+                setCoordinate( activeTab, name, util.toOrder(moveTo[name], getCoordinate("camera", name) ) );
             }
             else {
-                setCoordinate( "camera", name, util.toNumber( moveTo[name], getCoordinate("camera", name) ) );
+                setCoordinate( activeTab, name, util.toNumber( moveTo[name], getCoordinate("camera", name) ) );
             }
         });
         updateWidgets();
@@ -311,7 +371,7 @@
         createControls( "camera", 0, cameraWidgets );
         util.triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : cameraWidgets } );
         createControls( "step", 1, stepWidgets );
-        util.triggerEvent( toolbar, "impressionist:stepMove:init", { "widgets" : stepWidgets } );
+        util.triggerEvent( toolbar, "impressionist:stepmove:init", { "widgets" : stepWidgets } );
 
         activeStep = document.querySelector("#impress .step.active");
         getActiveStepCoordinates(activeStep);

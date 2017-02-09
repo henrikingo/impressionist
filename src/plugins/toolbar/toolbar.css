@@ -30,3 +30,7 @@
 #impressionist-toolbar-titles button {
     font-size: 70%;
 }
+
+#impressionist-toolbar-titles button.selected {
+    font-weight: bold;
+}

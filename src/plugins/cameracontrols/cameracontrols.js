@@ -8,7 +8,7 @@
  */
 (function ( document, window ) {
     'use strict';
-    var toolbar;
+    var cameraControls;
     var cameraCoordinates;
     var myWidgets = {};
     var rotationAxisLock = {x:false, y:false, z:false};
@@ -17,7 +17,7 @@
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
-    // Create widgets and add them to the impressionist toolbar //////////////////////////////////
+    // Create widgets and add them to the cameracontrols div //////////////////////////////////
     var round = function(coord) {
         var keys = ["x", "y", "z", "rotateX", "rotateY", "rotateZ"];
         for (var i in keys ) {
@@ -27,14 +27,20 @@
     };
 
     var addCameraControls = function() {
-        util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: 0, title: "Camera" } )
         myWidgets.xy = util.makeDomElement( '<button id="impressionist-cameracontrols-xy" title="Pan camera left-right, up-down">+</button>' );
         myWidgets.z  = util.makeDomElement( '<button id="impressionist-cameracontrols-z" title="Zoom in-out = up-down, rotate = left-right">Z</button>' );
         myWidgets.rotateXY = util.makeDomElement( '<button id="impressionist-cameracontrols-rotate" title="Rotate camera left-right, up-down">O</button>' );
 
-        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.xy } );
-        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.z } );
-        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.rotateXY } );
+        cameraControls = util.makeDomElement( '<div id="impressionist-cameracontrols"></div>' );
+        cameraControls.appendChild(myWidgets.xy);
+        cameraControls.appendChild(myWidgets.z);
+        cameraControls.appendChild(myWidgets.rotateXY);
+        gc.appendChild(document.body, cameraControls);
+
+        //util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: 0, title: "Navi" } )
+        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.xy } );
+        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.z } );
+        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.rotateXY } );
 
         var initDrag = function(event) {
             var drag = {};
@@ -121,7 +127,7 @@
                 moveTo.rotateZ = Number(cameraCoordinates.rotateZ.input.value) - diff.rotateZ/10;
                 moveTo.order = diff.order; // Order is not a diff, just set the new value
                 moveTo = round(moveTo);
-                util.triggerEvent(toolbar, "impressionist:camera:setCoordinates", moveTo );
+                util.triggerEvent(document, "impressionist:camera:setCoordinates", moveTo );
                 setTimeout( updateCameraCoordinatesFiber, 100 );
             }
         };
@@ -197,9 +203,9 @@
             resetRotationAxisLock();
         });
 
-        toolbar = document.getElementById("impressionist-toolbar");
         addCameraControls();
-    }, false);
+        impressionist().util.triggerEvent( cameraControls, "impressionist:cameracontrols:init" );
+    });
 
     // 3d coordinate transformations
     //
@@ -313,8 +319,5 @@
         return newDiff;
     };
 
-
-
-    
 })(document, window);
 

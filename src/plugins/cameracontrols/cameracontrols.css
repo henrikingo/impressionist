@@ -1,5 +1,9 @@
 /* Cameracontrols plugin (the buttons that allow you to pan, zoom, scale and rotate the camera) */
 
+#impressionist-cameracontrols {
+    pointer-events: auto;
+}
+
 #impressionist-cameracontrols-xy {
     position: fixed;
     bottom: 50px;

@@ -219,10 +219,25 @@
         impressionist().util = {}
     }
 
+    impressionist().util.capitalize = function( str ) {
+        return str[0].toUpperCase() + str.substring(1);
+    }
+
     impressionist().util.toNumber = function (numeric, fallback) {
         return isNaN(numeric) ? (fallback || 0) : Number(numeric);
     };
-    
+
+    impressionist().util.toOrder = function ( order, fallback ) {
+        fallback = fallback || "xyz";
+        if ( ! order ) return fallback;
+        if ( order.length > 3 ) return fallback;
+        for ( var i = 0; i < order.length; i++ ) {
+            var c = order[i];
+            if ( "xyz".indexOf(c) < 0 ) return fallback;
+        }
+        return order;
+    };
+
     impressionist().util.triggerEvent = function (el, eventName, detail) {
         var event = document.createEvent("CustomEvent");
         event.initCustomEvent(eventName, true, true, detail);
@@ -269,17 +284,53 @@
 (function ( document, window ) {
     'use strict';
     var toolbar;
-    var coordinates = {rotate:{x:0,y:0,z:0},translate:{x:0,y:0,z:0,order:"xyz"},scale:1};
-    var widgets = {};
+    var coordinates = {};
+    coordinates["camera"] = {rotate:{x:0,y:0,z:0},translate:{x:0,y:0,z:0,order:"xyz"},scale:1};
+    coordinates["step"] = {rotate:{x:0,y:0,z:0},translate:{x:0,y:0,z:0,order:"xyz"},scale:1};
+    var cameraWidgets = {};
+    var stepWidgets = {};
     var widgetNames = ['x', 'y', 'z', 'scale', 'rotateX', 'rotateY', 'rotateZ', 'order'];
     var activeStep;
     var util = impressionist().util;
     var css3 = impressionist().css3;
 
-    // Functions for zooming and panning the canvas //////////////////////////////////////////////
+    // Generally impress.js & impressionist don't use object oriented JavaScript, but
+    // this is definitively sliding in that direction...
 
+    // Helper function to set the right path in coordinates[*], given a name from widgetNames
+    var setCoordinate = function( cameraOrStep, name, value ) {
+        if ( name.length == 1 ) { // x, y, z
+            coordinates[cameraOrStep].translate[name] = value;
+        }
+        else if ( name == "scale" ) {
+            coordinates[cameraOrStep].scale = value;
+        }
+        else if ( name == "order" ) {
+            coordinates[cameraOrStep].rotate.order = value;
+        }
+        else {
+            var xyz = name.substr(-1).toLowerCase();
+            coordinates[cameraOrStep].rotate[xyz] = value;
+        }
+    };
+    // Helper function to get the right path in coordinates[*] object, given a name from widgetNames
+    var getCoordinate = function( cameraOrStep, name ) {
+        if ( name.length == 1 ) { // x, y, z
+            return coordinates[cameraOrStep].translate[name];
+        }
+        else if ( name == "scale" ) {
+            return coordinates[cameraOrStep].scale;
+        }
+        else if ( name == "order" ) {
+            return coordinates[cameraOrStep].rotate.order;
+        }
+        else {
+            var xyz = name.substr(-1).toLowerCase();
+            return coordinates[cameraOrStep].rotate[xyz];
+        }
+    };
 
-    // Get user input values and move/scale canvas accordingly
+    // Move canvas (aka the camera) to match the coordinates["camera"]
     var updateCanvasPosition = function() {
         var root = document.getElementById("impress");
         var rootData = root.dataset;
@@ -291,23 +342,21 @@
                 perspective: util.toNumber( rootData.perspective, 1000 )
         };
         var canvas = root.firstChild;
-        var activeStep = document.querySelector("div#impress div.step.active");
-        var stepData = activeStep.dataset;
 
         // compute target state of the canvas based on given step
         var target = {
             rotate: {
-                x: -coordinates.rotate.x,
-                y: -coordinates.rotate.y,
-                z: -coordinates.rotate.z,
-                order: coordinates.rotate.order
+                x: -coordinates["camera"].rotate.x,
+                y: -coordinates["camera"].rotate.y,
+                z: -coordinates["camera"].rotate.z,
+                order: coordinates["camera"].rotate.order
             },
             translate: {
-                x: -coordinates.translate.x,
-                y: -coordinates.translate.y,
-                z: -coordinates.translate.z
+                x: -coordinates["camera"].translate.x,
+                y: -coordinates["camera"].translate.y,
+                z: -coordinates["camera"].translate.z
             },
-            scale: 1 / coordinates.scale
+            scale: 1 / coordinates["camera"].scale
         };
 
         var windowScale = css3.computeWindowScale(config);
@@ -327,83 +376,56 @@
         });
     };
 
+    var updateStepPosition = function () {
+        // First we want to persist the new coordinates to the dom element of the active step.
+        activeStep.setAttribute("data-x", coordinates["step"].translate.x);
+        activeStep.setAttribute("data-y", coordinates["step"].translate.y);
+        activeStep.setAttribute("data-z", coordinates["step"].translate.z);
+        activeStep.setAttribute("data-rotate-x", coordinates["step"].rotate.x);
+        activeStep.setAttribute("data-rotate-y", coordinates["step"].rotate.y);
+        activeStep.setAttribute("data-rotate-z", coordinates["step"].rotate.z);
+        activeStep.setAttribute("data-rotate-order", coordinates["step"].rotate.order);
+        activeStep.setAttribute("data-scale", coordinates["step"].scale);
 
-    // Helper function to set the right path in `coordinates` object, given a name from widgetNames
-    var setCoordinate = function( name, value ) {
-        if ( name.length == 1 ) { // x, y, z
-            coordinates.translate[name] = value;
-        }
-        else if ( name == "scale" ) {
-            coordinates.scale = value;
-        }
-        else if ( name == "order" ) {
-            coordinates.rotate.order = value;
-        }
-        else {
-            var xyz = name.substr(-1).toLowerCase();
-            coordinates.rotate[xyz] = value;
-        }
-    };
-    // Helper function to get the right path in `coordinates` object, given a name from widgetNames
-    var getCoordinate = function( name ) {
-        if ( name.length == 1 ) { // x, y, z
-            return coordinates.translate[name];
-        }
-        else if ( name == "scale" ) {
-            return coordinates.scale;
-        }
-        else if ( name == "order" ) {
-            return coordinates.rotate.order;
-        }
-        else {
-            var xyz = name.substr(-1).toLowerCase();
-            return coordinates.rotate[xyz];
-        }
+        // Then set the 3D CSS to match. This actually moves the step.
+        css3.css(activeStep, {
+                 position: "absolute",
+                 transform: "translate(-50%,-50%)" +
+                             css3.translate(coordinates["step"].translate) +
+                             css3.rotate(coordinates["step"].rotate) +
+                             css3.scale(coordinates["step"].scale),
+                 transformStyle: "preserve-3d"
+        });
     };
 
     // Set event listeners for widgets.x.input/plus/minus widgets.
-    var setListeners = function( widgets, name ){
+    var setListeners = function( widgets, name, cameraOrStep ){
         if (name == "order") return; // The last widget is non-numeric, separate listeners set explicitly.
 
         widgets[name].input.addEventListener( "input", function( event ) {
-            setCoordinate( name, util.toNumber( event.target.value, name=="scale"?1:0 ) );
+            setCoordinate( cameraOrStep, name, util.toNumber( event.target.value, name=="scale"?1:0 ) );
             updateCanvasPosition();
+            updateStepPosition();
         });
         widgets[name].minus.addEventListener( "click", function( event ) {
-            setCoordinate( name, Math.round(getCoordinate(name)-1) );
+            setCoordinate( cameraOrStep, name, Math.round(getCoordinate(cameraOrStep, name)-1) );
             // But scale cannot be < 1
             if( name == "scale" && getCoordinate( name ) < 1 )
-                setCoordinate( name, 1 );
+                setCoordinate( cameraOrStep, name, 1 );
             updateWidgets();
             updateCanvasPosition();
+            updateStepPosition();
         });
         widgets[name].plus.addEventListener( "click", function( event ) {
-            setCoordinate( name, Math.round(getCoordinate(name)+1) );
+            setCoordinate( cameraOrStep, name, Math.round(getCoordinate(cameraOrStep, name)+1) );
             updateWidgets();
             updateCanvasPosition();
+            updateStepPosition();
         });
     };
 
-    var addCameraControls = function() {
-        widgetNames.forEach( function(name){
-            var r = name == "rotateX" ? "rotate: " : "";
-            var label = name.substr(0,6)=="rotate" ? name.substr(-1).toLowerCase() : name;
-            var element = util.makeDomElement( '<span>' + r + label + 
-                                          ':<input id="impressionist-camera-' + name + 
-                                          '" class="impressionist-camera impressionist-camera-input" type="text" />' +
-                                          '<button id="impressionist-camera-' + name + '-minus" ' +
-                                          'class="impressionist-camera impressionist-camera-minus">-</button>' + 
-                                          '<button id="impressionist-camera-' + name + '-plus" ' +
-                                          'class="impressionist-camera impressionist-camera-plus">+</button> </span>' );
-            util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : element } );
-            
-            var input = element.firstElementChild;
-            var minus = input.nextSibling;
-            var plus  = minus.nextSibling;
-            widgets[name] = { minus : minus, input : input, plus : plus };
-            setListeners( widgets, name );
-        });
-        // order widget has its own listeners, as it's not a numeric field
+    // order widget has its own listeners, as it's not a numeric field
+    var setOrderListeners = function( widgets, cameraOrStep ) {
         var name = "order";
         widgets[name].input.addEventListener( "input", function( event ) {
             var v = event.target.value.toString().toLowerCase();
@@ -415,11 +437,12 @@
                 value += v[i];
             }
             event.target.value = value;
-            setCoordinate( name, value );
+            setCoordinate( cameraOrStep, name, value );
             updateCanvasPosition();
+            updateStepPosition();
         });
         widgets[name].minus.addEventListener( "click", function( event ) {
-            var current = getCoordinate(name);
+            var current = getCoordinate(cameraOrStep, name);
             var value = "";
             if( current.length < 3 ) {
                 var available = "xyz";
@@ -433,12 +456,13 @@
                 // shift the order string so that 1st letter becomes last, second first, third second.
                 value = current[1] + current[2] + current[0];
             }
-            setCoordinate( name, value );
+            setCoordinate( cameraOrStep, name, value );
             updateWidgets();
             updateCanvasPosition();
+            updateStepPosition();
         });
         widgets[name].plus.addEventListener( "click", function( event ) {
-            var current = getCoordinate(name);
+            var current = getCoordinate(cameraOrStep, name);
             var value = "";
             if( current.length < 3 ) {
                 var available = "xyz";
@@ -452,23 +476,64 @@
                 // shift the order string so that 1st letter becomes last, second first, third second.
                 value =  current[2] + current[0] + current[1];
             }
-            setCoordinate( name, value );
+            setCoordinate( cameraOrStep, name, value );
             updateWidgets();
             updateCanvasPosition();
+            updateStepPosition();
         });
     };
-    
-    // Update the coordinates object from the currently activeStep.
-    // IOW this assumes that the canvas positioning in fact matches the attributes of the activeStep,
+
+    var createControls = function(cameraOrStep, group, widgets) {
+        // Set the text of the tab for this group of widgets
+        util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: group, title: util.capitalize(cameraOrStep) } )
+
+        widgetNames.forEach( function(name){
+            var r = name == "rotateX" ? "rotate: " : "";
+            var label = name.substr(0,6)=="rotate" ? name.substr(-1).toLowerCase() : name;
+            var element = util.makeDomElement( '<span>' + r + label + 
+                                          ':<input id="impressionist-' + cameraOrStep + '-' + name + 
+                                          '" class="impressionist-' + cameraOrStep + ' impressionist-' + cameraOrStep + '-input" type="text" />' +
+                                          '<button id="impressionist-' + cameraOrStep + '-' + name + '-minus" ' +
+                                          'class="impressionist-' + cameraOrStep + ' impressionist-' + cameraOrStep + '-minus">-</button>' + 
+                                          '<button id="impressionist-' + cameraOrStep + '-' + name + '-plus" ' +
+                                          'class="impressionist-' + cameraOrStep + ' impressionist-' + cameraOrStep + '-plus">+</button> </span>' );
+            util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : group, element : element } );
+
+            var input = element.firstElementChild;
+            var minus = input.nextSibling;
+            var plus  = minus.nextSibling;
+            widgets[name] = { minus : minus, input : input, plus : plus };
+            setListeners( widgets, name, cameraOrStep );
+        });
+        setOrderListeners( widgets, cameraOrStep );
+    };
+
+    // Update the coordinates objects from the currently activeStep.
+    // IOW this assumes that the canvas positioning in fact matches the attributes of the activeStep
     // which is at least true for example immediately after impress:stepenter event.
     var getActiveStepCoordinates = function(activeStep) {
         var stepData = activeStep.dataset;
-        coordinates = {
+        coordinates["camera"] = {
             rotate: {
                 x: util.toNumber(stepData.rotateX),
                 y: util.toNumber(stepData.rotateY),
                 z: util.toNumber(stepData.rotateZ, util.toNumber(stepData.rotate)),
-                order: "xyz" // TODO: Not supported in impress.js yet, so all existing steps have this order for now
+                order: util.toOrder(stepData.rotateOrder)
+            },
+            translate: {
+                x: util.toNumber(stepData.x),
+                y: util.toNumber(stepData.y),
+                z: util.toNumber(stepData.z)
+            },
+            scale: util.toNumber(stepData.scale, 1)
+        };
+
+        coordinates["step"] = {
+            rotate: {
+                x: util.toNumber(stepData.rotateX),
+                y: util.toNumber(stepData.rotateY),
+                z: util.toNumber(stepData.rotateZ, util.toNumber(stepData.rotate)),
+                order: util.toOrder(stepData.rotateOrder)
             },
             translate: {
                 x: util.toNumber(stepData.x),
@@ -481,7 +546,8 @@
 
     var updateWidgets = function() {
         widgetNames.forEach( function( name ) {
-            widgets[name].input.value = getCoordinate(name);
+            cameraWidgets[name].input.value = getCoordinate("camera", name);
+            stepWidgets[name].input.value = getCoordinate("step", name);
         });
     };
 
@@ -493,27 +559,32 @@
             if ( moveTo[name] === undefined ) return; // continue, but in JS forEach is a function
             if ( name == "order" ) {
                 // TODO: Could do input sanitization here, but for now we actually trust the plugins that will use this so...
-                setCoordinate( name, moveTo[name] );
+                setCoordinate( "camera", name, moveTo[name] );
             }
             else {
-                setCoordinate( name, util.toNumber( moveTo[name], getCoordinate(name) ) );
+                setCoordinate( "camera", name, util.toNumber( moveTo[name], getCoordinate("camera", name) ) );
             }
         });
         updateWidgets();
         updateCanvasPosition();
+        updateStepPosition();
     });
 
-    // impress.js events ///////////////////////////////////////////////////////////////////////////
-    
+    // impressionist and impress.js events ///////////////////////////////////////////////////////
+
     gc.addEventListener(document, "impressionist:toolbar:init", function (event) {
         toolbar = event.detail.toolbar;
-        addCameraControls( event );
-        util.triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : widgets } );
+
+        createControls( "camera", 0, cameraWidgets );
+        util.triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : cameraWidgets } );
+        createControls( "step", 1, stepWidgets );
+        util.triggerEvent( toolbar, "impressionist:stepMove:init", { "widgets" : stepWidgets } );
+
         activeStep = document.querySelector("#impress .step.active");
         getActiveStepCoordinates(activeStep);
         updateWidgets();
     });
-    
+
     // If user moves to another step with impress().prev() / .next() or .goto(), then the canvas
     // will be set according to that step. We update our widgets to reflect reality.
     // From here, user can again zoom out or pan away as he prefers.
@@ -545,7 +616,7 @@
  */
 (function ( document, window ) {
     'use strict';
-    var toolbar;
+    var cameraControls;
     var cameraCoordinates;
     var myWidgets = {};
     var rotationAxisLock = {x:false, y:false, z:false};
@@ -554,7 +625,7 @@
 
     // Functions for zooming and panning the canvas //////////////////////////////////////////////
 
-    // Create widgets and add them to the impressionist toolbar //////////////////////////////////
+    // Create widgets and add them to the cameracontrols div //////////////////////////////////
     var round = function(coord) {
         var keys = ["x", "y", "z", "rotateX", "rotateY", "rotateZ"];
         for (var i in keys ) {
@@ -564,14 +635,20 @@
     };
 
     var addCameraControls = function() {
-        util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: 0, title: "Camera" } )
         myWidgets.xy = util.makeDomElement( '<button id="impressionist-cameracontrols-xy" title="Pan camera left-right, up-down">+</button>' );
         myWidgets.z  = util.makeDomElement( '<button id="impressionist-cameracontrols-z" title="Zoom in-out = up-down, rotate = left-right">Z</button>' );
         myWidgets.rotateXY = util.makeDomElement( '<button id="impressionist-cameracontrols-rotate" title="Rotate camera left-right, up-down">O</button>' );
 
-        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.xy } );
-        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.z } );
-        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.rotateXY } );
+        cameraControls = util.makeDomElement( '<div id="impressionist-cameracontrols"></div>' );
+        cameraControls.appendChild(myWidgets.xy);
+        cameraControls.appendChild(myWidgets.z);
+        cameraControls.appendChild(myWidgets.rotateXY);
+        gc.appendChild(document.body, cameraControls);
+
+        //util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: 0, title: "Navi" } )
+        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.xy } );
+        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.z } );
+        //util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group : 0, element : myWidgets.rotateXY } );
 
         var initDrag = function(event) {
             var drag = {};
@@ -658,7 +735,7 @@
                 moveTo.rotateZ = Number(cameraCoordinates.rotateZ.input.value) - diff.rotateZ/10;
                 moveTo.order = diff.order; // Order is not a diff, just set the new value
                 moveTo = round(moveTo);
-                util.triggerEvent(toolbar, "impressionist:camera:setCoordinates", moveTo );
+                util.triggerEvent(document, "impressionist:camera:setCoordinates", moveTo );
                 setTimeout( updateCameraCoordinatesFiber, 100 );
             }
         };
@@ -734,9 +811,9 @@
             resetRotationAxisLock();
         });
 
-        toolbar = document.getElementById("impressionist-toolbar");
         addCameraControls();
-    }, false);
+        impressionist().util.triggerEvent( cameraControls, "impressionist:cameracontrols:init" );
+    });
 
     // 3d coordinate transformations
     //
@@ -850,9 +927,6 @@
         return newDiff;
     };
 
-
-
-    
 })(document, window);
 
 
@@ -1085,11 +1159,19 @@
             // Hide currentTab
             if ( currentTab !== undefined ) {
                 groups[currentTab].style.display = "none";
+                groupDiv.classList.remove("selected-group-" + currentTab);
+                if (groupTitles[currentTab]) {
+                    groupTitles[currentTab].classList.remove("selected");
+                }
             }
             // For this tab, show it or if it was already showing, leave it hidden (toggle)
             if ( index != currentTab ) {
                 groupDiv.style.display = "block";
                 groups[index].style.display = "inline";
+                if (groupTitles[index]) {
+                    groupTitles[index].classList.add("selected");
+                }
+                groupDiv.classList.add("selected-group-" + index);
                 currentTab = index;
             }
             else {
@@ -1122,9 +1204,14 @@
                 groupTitlesDiv.appendChild(groupTitles[index]);
             }
             else{
-                groupTitlesDiv.insertBefore(groupsTitles[index], groups[nextIndex]);
+                groupTitlesDiv.insertBefore(groupTitles[index], groupTitles[nextIndex]);
             }
             groupTitles[index].addEventListener("click", showTabGenerator(index));
+
+            // Tab zero happens to be the default
+            if ( index == 0 && !currentTab ) {
+                groupTitles[0].classList.add("selected");
+            }
         }
         groupTitles[index].innerHTML = e.detail.title;
     });
@@ -1139,8 +1226,14 @@
      * :param: e.detail.element  a dom element to add to the toolbar
      */
     toolbar.addEventListener("impressionist:toolbar:appendChild", function( e ){
-        var group = getGroupElement(e.detail.group);
+        var index = e.detail.group;
+        var group = getGroupElement(index);
         group.appendChild(e.detail.element);
+
+        // Tab zero happens to be the default
+        if ( index == 0 && !currentTab ) {
+            groupDiv.classList.add("selected-group-0");
+        }
     });
 
     /**
@@ -1167,7 +1260,7 @@
      */
     gc.addEventListener(document, "impressionist:tinymce:init", function (event) {
         gc.appendChild(document.body, toolbar);
-        impressionist().util.triggerEvent( document, "impressionist:toolbar:init", { toolbar : toolbar } );
+        impressionist().util.triggerEvent( toolbar, "impressionist:toolbar:init", { toolbar : toolbar } );
     });
 
 })(document, window);

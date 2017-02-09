@@ -8,7 +8,9 @@
 /* Camera plugin */
 
 #impressionist-toolbar .impressionist-camera-minus,
-#impressionist-toolbar .impressionist-camera-plus {
+#impressionist-toolbar .impressionist-camera-plus,
+#impressionist-toolbar .impressionist-step-minus,
+#impressionist-toolbar .impressionist-step-plus {
   font-size: 70%;
   width: 25px;
   height: 15px;
@@ -22,11 +24,16 @@
 }
 
 /* Cut away the empty space left by the plus and minus buttons as they were relatively positioned elsewhere. */
-#impressionist-toolbar-group-0 span {
+#impressionist-toolbar-group-0 span,
+#impressionist-toolbar-group-1 span {
     margin-right: -48px;
 }
 
 /* Cameracontrols plugin (the buttons that allow you to pan, zoom, scale and rotate the camera) */
+
+#impressionist-cameracontrols {
+    pointer-events: auto;
+}
 
 #impressionist-cameracontrols-xy {
     position: fixed;
@@ -80,4 +87,8 @@
 
 #impressionist-toolbar-titles button {
     font-size: 70%;
+}
+
+#impressionist-toolbar-titles button.selected {
+    font-weight: bold;
 }

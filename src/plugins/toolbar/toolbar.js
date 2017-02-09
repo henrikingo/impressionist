@@ -80,11 +80,19 @@
             // Hide currentTab
             if ( currentTab !== undefined ) {
                 groups[currentTab].style.display = "none";
+                groupDiv.classList.remove("selected-group-" + currentTab);
+                if (groupTitles[currentTab]) {
+                    groupTitles[currentTab].classList.remove("selected");
+                }
             }
             // For this tab, show it or if it was already showing, leave it hidden (toggle)
             if ( index != currentTab ) {
                 groupDiv.style.display = "block";
                 groups[index].style.display = "inline";
+                if (groupTitles[index]) {
+                    groupTitles[index].classList.add("selected");
+                }
+                groupDiv.classList.add("selected-group-" + index);
                 currentTab = index;
             }
             else {
@@ -117,9 +125,14 @@
                 groupTitlesDiv.appendChild(groupTitles[index]);
             }
             else{
-                groupTitlesDiv.insertBefore(groupsTitles[index], groups[nextIndex]);
+                groupTitlesDiv.insertBefore(groupTitles[index], groupTitles[nextIndex]);
             }
             groupTitles[index].addEventListener("click", showTabGenerator(index));
+
+            // Tab zero happens to be the default
+            if ( index == 0 && !currentTab ) {
+                groupTitles[0].classList.add("selected");
+            }
         }
         groupTitles[index].innerHTML = e.detail.title;
     });
@@ -134,8 +147,14 @@
      * :param: e.detail.element  a dom element to add to the toolbar
      */
     toolbar.addEventListener("impressionist:toolbar:appendChild", function( e ){
-        var group = getGroupElement(e.detail.group);
+        var index = e.detail.group;
+        var group = getGroupElement(index);
         group.appendChild(e.detail.element);
+
+        // Tab zero happens to be the default
+        if ( index == 0 && !currentTab ) {
+            groupDiv.classList.add("selected-group-0");
+        }
     });
 
     /**
@@ -162,7 +181,7 @@
      */
     gc.addEventListener(document, "impressionist:tinymce:init", function (event) {
         gc.appendChild(document.body, toolbar);
-        impressionist().util.triggerEvent( document, "impressionist:toolbar:init", { toolbar : toolbar } );
+        impressionist().util.triggerEvent( toolbar, "impressionist:toolbar:init", { toolbar : toolbar } );
     });
 
 })(document, window);

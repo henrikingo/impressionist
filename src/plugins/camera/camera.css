@@ -21,3 +21,7 @@
 #impressionist-toolbar-group-1 span {
     margin-right: -48px;
 }
+#impressionist-toolbar-group-0 span.nocut,
+#impressionist-toolbar-group-1 span.nocut {
+    margin-right: none;
+}

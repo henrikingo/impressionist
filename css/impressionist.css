@@ -28,6 +28,10 @@
 #impressionist-toolbar-group-1 span {
     margin-right: -48px;
 }
+#impressionist-toolbar-group-0 span.nocut,
+#impressionist-toolbar-group-1 span.nocut {
+    margin-right: none;
+}
 
 /* Cameracontrols plugin (the buttons that allow you to pan, zoom, scale and rotate the camera) */
 
@@ -83,6 +87,10 @@
 #impressionist-toolbar-groups input {
     width: 3em;
     font-size: 80%;
+    opacity: 1;
+}
+#impressionist-toolbar-groups input[type="checkbox"] {
+    width: 1em;
 }
 
 #impressionist-toolbar-titles button {

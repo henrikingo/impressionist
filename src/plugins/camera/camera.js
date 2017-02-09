@@ -135,7 +135,7 @@
         widgets[name].minus.addEventListener( "click", function( event ) {
             setCoordinate( cameraOrStep, name, Math.round(getCoordinate(cameraOrStep, name)-1) );
             // But scale cannot be < 1
-            if( name == "scale" && getCoordinate( name ) < 1 )
+            if( name == "scale" && getCoordinate( cameraOrStep, name ) < 1 )
                 setCoordinate( cameraOrStep, name, 1 );
             updateWidgets();
             updateCanvasPosition();
@@ -231,6 +231,14 @@
             setListeners( widgets, name, cameraOrStep );
         });
         setOrderListeners( widgets, cameraOrStep );
+
+        // Add a checkbox to control whether the + O Z cameracontrols will control camera, step or both
+        var checkbox = util.makeDomElement( '<span class="nocut">controls:' +
+                                            '<input type="checkbox" id="impressionist-' + cameraOrStep + '-cameracontrols" ' +
+                                            'checked="checked" title="Should the + O Z camera controls move the ' +
+                                            cameraOrStep + '?" />' +
+                                            '</span>' );
+        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group: group, element: checkbox });
     };
 
     // Update the coordinates objects from the currently activeStep.

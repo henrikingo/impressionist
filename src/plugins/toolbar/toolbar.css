@@ -25,6 +25,10 @@
 #impressionist-toolbar-groups input {
     width: 3em;
     font-size: 80%;
+    opacity: 1;
+}
+#impressionist-toolbar-groups input[type="checkbox"] {
+    width: 1em;
 }
 
 #impressionist-toolbar-titles button {

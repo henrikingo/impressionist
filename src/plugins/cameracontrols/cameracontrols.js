@@ -278,11 +278,11 @@
 
         var xyz = diff.order; // Note: This is the old value, not a diff. The only place to change it is this method.
         
-        var activeWidgets = coordWidgets[getActiveTab()];
+        var cameraWidgets = coordWidgets["camera"];
         var angle = {
-            x: util.toNumber(activeWidgets.rotateX.input.value),
-            y: util.toNumber(activeWidgets.rotateY.input.value),
-            z: util.toNumber(activeWidgets.rotateZ.input.value)
+            x: util.toNumber(cameraWidgets.rotateX.input.value),
+            y: util.toNumber(cameraWidgets.rotateY.input.value),
+            z: util.toNumber(cameraWidgets.rotateZ.input.value)
         };
 
         var computeRotate = {
@@ -321,6 +321,7 @@
 
         // Rotations
         // Capture current rotations from activeWidgets
+        var activeWidgets = coordWidgets[getActiveTab()];
         var currentRotations = {};
         for ( var i = 0; i < xyz.length; i++ ) {
             // iterate over rotateX/Y/Z in the order they appear in "order"

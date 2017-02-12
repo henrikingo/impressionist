@@ -547,7 +547,7 @@
         // Add a checkbox to control whether the + O Z cameracontrols will control camera, step or both
         var span = util.makeDomElement( '<span class="nocut">lock:' +
                                         '<input type="checkbox" id="impressionist-' + cameraOrStep + '-cameracontrols" ' +
-                                        'checked="checked" title="Lock Step coordinates to Camera?" />' +
+                                        'title="Lock Step coordinates to Camera?" />' +
                                         '</span>' );
         util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group: group, element: span });
         widgets["lock"] = { input : span.firstElementChild };

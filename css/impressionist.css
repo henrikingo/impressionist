@@ -24,12 +24,12 @@
 }
 
 /* Cut away the empty space left by the plus and minus buttons as they were relatively positioned elsewhere. */
-#impressionist-toolbar-group-0 span,
-#impressionist-toolbar-group-1 span {
+#impressionist-toolbar-group-1 span,
+#impressionist-toolbar-group-2 span {
     margin-right: -48px;
 }
-#impressionist-toolbar-group-0 span.nocut,
-#impressionist-toolbar-group-1 span.nocut {
+#impressionist-toolbar-group-1 span.nocut,
+#impressionist-toolbar-group-2 span.nocut {
     margin-right: none;
 }
 

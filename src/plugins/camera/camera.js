@@ -322,15 +322,13 @@
         });
     };
 
-    // Get active toolbar tab. If neither is active, return the first tab ("camera").
+    // Get active toolbar tab between "camera" and "step". If neither "camera" or "step" is active, return "camera"
     var getActiveTab = function() {
         var selectedTab = document.querySelector("#impressionist-toolbar-titles button.selected");
-        if (selectedTab) {
-            return selectedTab.innerHTML.toLowerCase();
+        if (selectedTab.innerHTML == "Step") {
+            return "step";
         }
-        // Just get the first tab (which is "camera")
-        selectedTab = document.querySelector("#impressionist-toolbar-titles button");
-        return selectedTab.innerHTML.toLowerCase();
+        return "camera";
     };
 
     // Returns true if the lock checkbox is checked, otherwise false
@@ -368,9 +366,9 @@
     gc.addEventListener(document, "impressionist:toolbar:init", function (event) {
         toolbar = event.detail.toolbar;
 
-        createControls( "camera", 0, cameraWidgets );
+        createControls( "camera", 1, cameraWidgets );
         util.triggerEvent( toolbar, "impressionist:camera:init", { "widgets" : cameraWidgets } );
-        createControls( "step", 1, stepWidgets );
+        createControls( "step", 2, stepWidgets );
         util.triggerEvent( toolbar, "impressionist:stepmove:init", { "widgets" : stepWidgets } );
 
         activeStep = document.querySelector("#impress .step.active");

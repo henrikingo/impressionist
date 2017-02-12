@@ -26,15 +26,14 @@
         return coord;
     };
 
-    // Get active toolbar tab. If neither is active, return the first tab ("camera").
+    // Get "camera" or "step" depending on which is the active tab.
+    // If neither is active, return the first tab ("camera").
     var getActiveTab = function() {
         var selectedTab = document.querySelector("#impressionist-toolbar-titles button.selected");
-        if (selectedTab) {
-            return selectedTab.innerHTML.toLowerCase();
+        if (selectedTab.innerHTML.toLowerCase() == "step") {
+            return "step";
         }
-        // Just get the first tab (which is "camera")
-        selectedTab = document.querySelector("#impressionist-toolbar-titles button");
-        return selectedTab.innerHTML.toLowerCase();
+        return "camera";
     };
     // Return an order to use, depending on which of camera or step tab is active
     var getActiveOrder = function() {

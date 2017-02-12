@@ -1127,6 +1127,7 @@
     var toolbar;
     var steps = [];
     var activeStep;
+    var waitForRefresh = false;
     var group = 0;
     var myWidgets = {};
     var cameraWidgets = {};
@@ -1144,15 +1145,28 @@
         // Set the text of the tab for this group of widgets
         util.triggerEvent(toolbar, "impressionist:toolbar:groupTitle", { group: group, title: "Outline" } )
 
+        // Add button for new step
         var newButton = util.makeDomElement( '<button id="impressionist-stepedit-new" title="New step">&#x2b1c;</button>' );
-
         util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group: group, element: newButton });
         myWidgets["new"] = newButton;
-
         newButton.addEventListener("click", function (event) {
-            newStep();
+            if ( !waitForRefresh ) {
+                newStep();
+            }
+        });
+
+        // Add button to delete step
+        var deleteButton = util.makeDomElement( '<button id="impressionist-stepedit-delete" title="Delete step">X</button>' );
+        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group: group, element: deleteButton });
+        myWidgets["delete"] = deleteButton;
+        deleteButton.addEventListener("click", function (event) {
+            if ( !waitForRefresh ) {
+                deleteStep();
+            }
         });
     };
+
+    // Helper functions ///////////////////////////////////////////////////////////////////////////
 
     // Get the step after this one. Returns undefined if this is already the last step.
     var getNextStep = function( thisStep ) {
@@ -1161,7 +1175,7 @@
             return undefined;
         }
         else {
-            return steps[i+1];
+            return steps[i];
         }
     };
 
@@ -1170,7 +1184,7 @@
         for( var i = 0; i < steps.length; i++ ) {
             if ( steps[i] == thisStep ) {
                 if ( i == steps.length - 1 ) {
-                    return -1;
+                    return 0;
                 }
                 else {
                     return i+1;
@@ -1178,6 +1192,32 @@
             }
         }
     };
+
+    // Generate a new step.id of the form "step-N", where N is one larger than the currently largest N
+    var generateStepId = function() {
+        var highest = 0;
+        var re = /step-(\d+)/;
+        steps.forEach( function(step) {
+            var res = step.id.match(re);
+            if (res) {
+                var num = parseInt(res[1]);
+                if ( num > highest ) highest = num;
+            }
+        });
+        var newId = highest + 1;
+        return "step-" + newId;
+    };
+
+    // Add some unique content to the new step, purely as a visual aid and placeholder for user
+    //
+    // :param: totalNum is what steps.length will be after the addition/deletion is complete.
+    // We cannot read steps.length at the moment this function is called, because it is out of date but not yet updated.
+    var generateStepContent = function(totalNum) {
+        var currentNum = getNextStepIndex(activeStep) + 1;
+        return "<p>Step " + currentNum + " of " + totalNum + "</p>";
+    };
+
+    // Add, Delete etc... actions /////////////////////////////////////////////////////////////////
 
     // Add new step after this one.
     // Copy all attributes of current step (including CSS classes, etc...). For position, copy camera coordinates.
@@ -1193,7 +1233,7 @@
             newStep.setAttribute(namePair[1], cameraWidgets[namePair[0]].input.value);
         });
         newStep.id = generateStepId();
-        newStep.innerHTML = generateStepContent();
+        newStep.innerHTML = generateStepContent(steps.length+1);
 
         // Actually insert the element
         var nextElement = getNextStep(activeStep);
@@ -1203,28 +1243,31 @@
         else {
             canvas.appendChild( newStep );
         }
-        impress().goto(newStep.id);
+        waitForRefresh = true;
+        impress().goto(newStep.id, 1);
     };
 
-    // Generate a new step.id of the form "step-N", where N is one larger than the currently largest N
-    var generateStepId = function() {
-        var highest = 1;
-        var re = new RegExp('step-(\d+)');
-        steps.forEach( function(step) {
-            var res = step.id.match(re);
-            if (res) {
-                var num = parseInt(res[1]);
-                if ( num > highest ) highest = num;
-            }
-        });
-        return "step-" + highest;
-    };
+    // Delete step
+    var deleteStep = function() {
+        // There cannot be zero steps. If this is the last step, just empty it.
+        if ( steps.length == 1 ) {
+            activeStep.innerHTML = generateStepContent(steps.length);
+            return;
+        }
+        // After deleting, we want to land on the following step
+        // Minus one, because we're deleting this slide
+        var nextIndex = getNextStepIndex(activeStep)-1;
+        // Now delete
+        activeStep.parentElement.removeChild(activeStep);
 
-    // Add some unique content to the new step, purely as a visual aid and placeholder for user
-    var generateStepContent = function() {
-        var currentNum = getNextStepIndex(activeStep) + 1;
-        var totalNum = steps.length;
-        return "<p>Step " + currentNum + " of " + totalNum + "</p>";
+        waitForRefresh = true;
+        if (nextIndex >= 0) {
+            impress().goto(nextIndex);
+        }
+        else {
+            // If we were already on the last step, we don't wrap around to first step, rather just stay on the last
+            impress().goto(steps.length-2);
+        }
     };
 
     // impressionist and impress.js events ///////////////////////////////////////////////////////
@@ -1251,6 +1294,7 @@
     gc.addEventListener(document, "impress:steprefresh", function (event) {
         steps = root.querySelectorAll(".step");
         activeStep = root.querySelector(".step.active");
+        waitForRefresh = false;
     });
 
 })(document, window);

@@ -1,3 +1,6 @@
 [submodule "impress.js"]
 	path = impress.js
 	url = https://github.com/henrikingo/impress.js.git
+[submodule "templates"]
+	path = templates
+	url = https://github.com/henrikingo/impressionist-templates.git

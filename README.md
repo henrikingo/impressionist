@@ -6,8 +6,10 @@ impress.js presentation into a proper desktop app that can open and save files.
 [TinyMCE](https://www.tinymce.com/docs/demo/inline/) is integrated to provide the editing
 capability.
 
-Currently this is a work in progress, not yet useable. 
-
+Current status is that you can open a presentations (such as the ones under
+[templates/](templates/)) then move, add or remove slides and edit their contents with TinyMCE. You
+can't really modify the style of slides, or have different kinds of slides. For that you'd still
+have to edit raw CSS and HTML.
 
 ## HOWTO
 
@@ -17,13 +19,14 @@ Pre-requisites: git, node 6.5+ and npm
         cd impressionist
         git submodule init
         git submodule update
+        
+        cd templates
+        git submodule init
+        git submodule update
+        cd ..
+        
         npm install
         npm start
-
-Note: As of this writing the only impress.js presentation in the world that will actually work in
-the editing app is the one in templates/cube/index.html. So you can open that with File->Open,
-do some edits, zoom around with the camera controls, and save the file. But that's really all
-you can do.
 
 ## Repository organization
 
@@ -35,6 +38,12 @@ you can do.
 ### Browser process / Electron renderer process
 
 * `src/impressionist.*`
+* `src/lib/*.js`
 * `src/plugins/*`
 
-Use `npm build` to build the above into `js/impressionist.js` and `css/impressionist.css`.
+...where `lib` functions are common utility functions and called synchronously. `plugins` are
+features, implemented as anonymous closures, and use the event based communication
+mechanism familiar from impress.js.
+
+Use `npm build` or just `node build.js` to build the above into `js/impressionist.js` and
+`css/impressionist.css`.

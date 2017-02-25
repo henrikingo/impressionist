@@ -13,7 +13,7 @@ function createWindow () {
                                     icon: './favicon.png'})
     mainWindow.maximize()
     // debug
-    mainWindow.webContents.openDevTools()
+    //mainWindow.webContents.openDevTools()
 
     // This triggers when user opens a presentation and it has loaded into the window
     mainWindow.webContents.on('dom-ready', function(event) {

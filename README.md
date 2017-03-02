@@ -1,7 +1,8 @@
 # Impressionist
 
-Impressionist is a prototype and concept to build a visual (wysiwyg) editor for creating impress.js
-presentations. The idea is to use [Electron](http://electron.atom.io/) to make the browser based
+Impressionist is a prototype and concept to build a visual (wysiwyg) editor for creating 
+[impress.js presentations](http://henrikingo.github.io/impress.js/examples/classic-slides/). 
+The idea is to use [Electron](http://electron.atom.io/) to make the browser based
 impress.js presentation into a proper desktop app that can open and save files. 
 [TinyMCE](https://www.tinymce.com/docs/demo/inline/) is integrated to provide the editing
 capability.

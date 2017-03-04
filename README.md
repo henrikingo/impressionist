@@ -34,6 +34,11 @@ Pre-requisites: git, node 6.5+ and npm
         npm install
         npm start
 
+
+## Mailing list
+
+[impressionist-presentations](https://groups.google.com/forum/#!forum/impressionist-presentations)
+
 ## Repository organization
 
 ### Electron main process

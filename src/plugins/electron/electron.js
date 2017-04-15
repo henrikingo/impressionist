@@ -25,7 +25,7 @@
             // Aaannd then we reload impress and put the impressionist bits right back to where they were
             impress().init();
             var script = impressionist().util.loadJavaScript(
-                process.resourcesPath + "/../../../../js/impressionist.js", function(){
+                process.cwd() + "/js/impressionist.js", function(){
                     impressionist().gc.pushElement(script); // The circle of life :-)
                     impressionist().util.triggerEvent(document, "impressionist:init", {}) 
                 });

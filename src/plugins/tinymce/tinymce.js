@@ -55,7 +55,7 @@
         var html = '<div id="tinymce-toolbar"></div>';
         toolbar = impressionist().util.makeDomElement(html);
         gc.appendChild(document.body, toolbar);
-        script = impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
+        script = impressionist().util.loadJavaScript(process.cwd() + "/node_modules/tinymce/tinymce.js", tinymceInit);
         impressionist().gc.pushElement(script);
     });
 

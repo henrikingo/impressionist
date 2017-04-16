@@ -1190,12 +1190,27 @@
 
     // Helper functions ///////////////////////////////////////////////////////////////////////////
 
-    var refresh = function( nextStep ) {
-        nextStep = nextStep || activeStep.id || 1;
+    var refresh = function( nextStep, slow ) {
+        if (nextStep === undefined) {
+            if ( activeStep ) {
+                nextStep = activeStep.id;
+            }
+            else {
+                nextStep = 1;
+            }
+        }
+
         waitForRefresh = true;
-        var duration = 1;
-        impress().goto(nextStep, duration);
-    }
+        if ( slow ) {
+            // Use whatever data-transition-duration is set in the presentation #impress div
+            impress().goto(nextStep);
+        }
+        else {
+            // Fast refresh (no zoom or translate or rotate happening)
+            impress().goto(nextStep, 1);
+        }
+    };
+
     // Get the step after this one. Returns undefined if this is already the last step.
     var getNextStep = function( thisStep ) {
         var i = getNextStepIndex(thisStep);
@@ -1307,19 +1322,20 @@
         // Now delete
         activeStep.parentElement.removeChild(activeStep);
 
-        waitForRefresh = true;
         if (nextIndex >= 0) {
-            refresh(nextIndex);
+            refresh(nextIndex, true);
         }
         else {
             // If we were already on the last step, we don't wrap around to first step, rather just stay on the last
-            refresh(steps.length-2);
+            refresh(steps.length-2, true);
         }
     };
 
 
     // Reorder dialog
     var showReorderDialog = function() {
+        reorderOldSelectedOptions = [];
+
         var size = steps.length < 16 ? steps.length : 16;
         reorderDialog = util.makeDomElement( '<div id="impressionist-stepedit-reorder-dialog">\n' +
                                              '  <p><strong>Reorder steps</strong></p>\n' +
@@ -1396,13 +1412,15 @@
     }
 
     var reorderSetSteps = function () {
-        var selectHTML = "";
-        for( var i = 0; i < steps.length; i++) {
-            var s = steps[i];
-            selectHTML += '<option id="' + s.id + '">' + s.id + '</option>\n';
+        if ( reorderSelect ) {
+            var selectHTML = "";
+            for( var i = 0; i < steps.length; i++) {
+                var s = steps[i];
+                selectHTML += '<option id="' + s.id + '">' + s.id + '</option>\n';
+            }
+            reorderSelect.innerHTML = selectHTML;
+            reorderSelectOptions( reorderOldSelectedOptions );
         }
-        reorderSelect.innerHTML = selectHTML;
-        reorderSelectOptions( reorderOldSelectedOptions );
     };
 
     var moveUp = function( step ) {

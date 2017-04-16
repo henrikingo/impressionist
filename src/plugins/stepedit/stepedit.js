@@ -1,7 +1,7 @@
 /**
  * Stepedit plugin
  *
- * Add or remove steps
+ * Add, remove and reorder steps
  *
  * Copyright 2017 Henrik Ingo (@henrikingo)
  * Released under the MIT license.
@@ -14,6 +14,9 @@
     var steps = [];
     var activeStep;
     var waitForRefresh = false;
+    var reorderDialog = null;
+    var reorderSelect = null;
+    var reorderOldSelectedOptions = [];
     var group = 0;
     var myWidgets = {};
     var cameraWidgets = {};
@@ -26,6 +29,7 @@
                              ['rotateZ', 'data-rotate-z'],
                              ['order', 'data-rotate-order']];
     var util = impressionist().util;
+
 
     var createWidgets = function() {
         // Set the text of the tab for this group of widgets
@@ -50,10 +54,33 @@
                 deleteStep();
             }
         });
+
+        // Add empty space
+        var space = util.makeDomElement( '<span class="impressionist-toolbar-space"> </span>' )
+        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group: group, element: space });
+
+        // Add button to reorder steps
+        var reorderButton = util.makeDomElement( '<button id="impressionist-stepedit-reorder" title="Reorder steps">&#x2195;</button>' );
+        util.triggerEvent(toolbar, "impressionist:toolbar:appendChild", { group: group, element: reorderButton });
+        myWidgets["reorder"] = reorderButton;
+        reorderButton.addEventListener("click", function (event) {
+            if ( reorderDialog ) {
+                hideReorderDialog();
+            }
+            else {
+                showReorderDialog();
+            }
+        });
     };
 
     // Helper functions ///////////////////////////////////////////////////////////////////////////
 
+    var refresh = function( nextStep ) {
+        nextStep = nextStep || activeStep.id || 1;
+        waitForRefresh = true;
+        var duration = 1;
+        impress().goto(nextStep, duration);
+    }
     // Get the step after this one. Returns undefined if this is already the last step.
     var getNextStep = function( thisStep ) {
         var i = getNextStepIndex(thisStep);
@@ -75,6 +102,26 @@
                 else {
                     return i+1;
                 }
+            }
+        }
+    };
+
+    // Get the step before this one. Returns undefined if this is already the first step.
+    var getPrevStep = function( thisStep ) {
+        var i = getPrevStepIndex(thisStep);
+        if ( i == -1 ) {
+            return undefined;
+        }
+        else {
+            return steps[i];
+        }
+    };
+
+    // Get index for previous step in steps array. If thisStep is already the first step, returns -1.
+    var getPrevStepIndex = function( thisStep ) {
+        for( var i = steps.length; i >= 0; i-- ) {
+            if ( steps[i] == thisStep ) {
+                return i-1;
             }
         }
     };
@@ -129,8 +176,7 @@
         else {
             canvas.appendChild( newStep );
         }
-        waitForRefresh = true;
-        impress().goto(newStep.id, 1);
+        refresh(newStep.id);
     };
 
     // Delete step
@@ -148,14 +194,133 @@
 
         waitForRefresh = true;
         if (nextIndex >= 0) {
-            impress().goto(nextIndex);
+            refresh(nextIndex);
         }
         else {
             // If we were already on the last step, we don't wrap around to first step, rather just stay on the last
-            impress().goto(steps.length-2);
+            refresh(steps.length-2);
         }
     };
 
+
+    // Reorder dialog
+    var showReorderDialog = function() {
+        var size = steps.length < 16 ? steps.length : 16;
+        reorderDialog = util.makeDomElement( '<div id="impressionist-stepedit-reorder-dialog">\n' +
+                                             '  <p><strong>Reorder steps</strong></p>\n' +
+                                             '  <table>\n' +
+                                             '    <tr><td>\n' +
+                                             '      <select id="impressionist-stepedit-reorder-select" multiple="true" size="' + size + '">\n' +
+                                             '      </select>\n' +
+                                             '    </td><td>\n' +
+                                             '      <button>^</button><br />\n' +
+                                             '      <button>v</button>\n' +
+                                             '    </td></tr>\n' +
+                                             '  </table>\n' +
+                                             '</div>' );
+        reorderSelect = reorderDialog.querySelector('#impressionist-stepedit-reorder-select');
+        reorderSetSteps();
+        var buttons = reorderDialog.querySelectorAll('button');
+        var up = buttons[0],
+            down = buttons[1];
+
+        // Event handlers
+        up.addEventListener("click", function (event) {
+            saveOldSelectedOptions();
+            for (var i = 0; i < reorderSelect.selectedOptions.length; i++){
+                var id = reorderSelect.selectedOptions[i].id
+                var step = document.getElementById(id);
+                var ret = moveUp( step );
+                if ( ret === false ) {
+                    // Already at the top
+                    break;
+                }
+            }
+            refresh();
+        });
+        // When moving down, move the last element first. Makes a difference when multiple selected.
+        down.addEventListener("click", function (event) {
+            saveOldSelectedOptions();
+            for (var i = reorderSelect.selectedOptions.length - 1; i >= 0; i--){
+                var id = reorderSelect.selectedOptions[i].id
+                var step = document.getElementById(id);
+                var ret = moveDown( step );
+                if ( ret === false ) {
+                    // Already at the bottom
+                    break;
+                }
+            }
+            refresh();
+        });
+        document.body.appendChild(reorderDialog);
+    };
+
+    // Helpers for reorderDialog
+    var hideReorderDialog = function() {
+        reorderDialog.parentElement.removeChild(reorderDialog);
+        reorderDialog = null;
+    };
+
+    // Select the options in the reorder dialog whose value (i.e. step ids) is given in the list
+    var reorderSelectOptions = function( toBeSelected ) {
+        if ( ! Array.isArray(toBeSelected) ) {
+            toBeSelected = [ toBeSelected ];
+        }
+        for ( var i = 0; i < reorderSelect.options.length; i++ ) {
+            if ( toBeSelected.indexOf( reorderSelect.options[i].value ) != -1 ) {
+                reorderSelect.options[i].selected = true;
+            }
+        }
+    };
+
+    var saveOldSelectedOptions = function () {
+        reorderOldSelectedOptions = [];
+        for (var i = 0; i < reorderSelect.selectedOptions.length; i++){
+            reorderOldSelectedOptions.push(reorderSelect.selectedOptions[i].value);
+        }
+    }
+
+    var reorderSetSteps = function () {
+        var selectHTML = "";
+        for( var i = 0; i < steps.length; i++) {
+            var s = steps[i];
+            selectHTML += '<option id="' + s.id + '">' + s.id + '</option>\n';
+        }
+        reorderSelect.innerHTML = selectHTML;
+        reorderSelectOptions( reorderOldSelectedOptions );
+    };
+
+    var moveUp = function( step ) {
+        var parent = step.parentElement;
+        var previous = getPrevStep(step);
+        if ( previous ) {
+            parent.insertBefore( step, previous );
+        }
+        else {
+            // Returning false signifies that we cannot move the step, because it is already first
+            return false;
+        }
+        // Need to refresh our internal list, so that getNextStep/getPrevStep work when this is called in a loop
+        steps = root.querySelectorAll(".step");
+    };
+
+    var moveDown = function( step ) {
+        var parent = step.parentElement;
+        var next = getNextStep(step);
+        if ( !next ) {;
+            // Returning false signifies that we cannot move the step, because it is already first
+            return false;
+        }
+        next = next.nextSibling;
+        if ( next ) {
+            parent.insertBefore( step, next );
+        }
+        else {
+            parent.appendChild( step );
+        };
+        // Need to refresh our internal list, so that getNextStep/getPrevStep work when this is called in a loop
+        steps = root.querySelectorAll(".step");
+    };
     // impressionist and impress.js events ///////////////////////////////////////////////////////
     var gc = impressionist().gc;
 
@@ -179,6 +344,7 @@
     // Keeping the state: Refresh list of steps and activeStep on each move
     gc.addEventListener(document, "impress:steprefresh", function (event) {
         steps = root.querySelectorAll(".step");
+        reorderSetSteps();
         activeStep = root.querySelector(".step.active");
         waitForRefresh = false;
     });

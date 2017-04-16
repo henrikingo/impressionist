@@ -1,0 +1,25 @@
+/* Stepedit plugin. Reorder steps dialog. */
+
+#impressionist-stepedit-reorder-dialog {
+    pointer-events: auto;
+    background-color: #fff;
+    border-bottom: solid 1px #ddd;
+    border-right: solid 1px #ddd;
+    opacity: 0.9;
+    color: #000;
+    padding: 10px;
+    width: 200px;
+}
+
+#impressionist-stepedit-reorder-dialog table {
+    width: 100%;
+}
+
+#impressionist-stepedit-reorder-dialog td {
+    vertical-align: middle;
+}
+
+#impressionist-stepedit-reorder-dialog button {
+    width: 22px;
+    height: 22px;
+}

@@ -14,7 +14,21 @@
 
     var tinymceOnInitDone = false;
 
-    var tinymceOnInit = function() {
+    var tinymceOnInit = function(event) {
+        // When user types text into TinyMCE, we don't want that to trigger impress.js events.
+        // Note that the form plugin in impress.js does this exact same thing, but it has already
+        // been executed at this point, so we have to do this ourselves specifically for TinyMCE.
+        // Example: When user type's 'p' into a slide, we must not launch the presenter console!
+        var editableDiv = event.target.targetElm;
+        gc.addEventListener( editableDiv, "keydown", function( event ) {
+            event.stopPropagation();
+        } );
+        gc.addEventListener( editableDiv, "keyup", function( event ) {
+            event.stopPropagation();
+        } );
+
+        // Send an event to tell other plugins that TinyMCE has now initialized at least one editor
+        // window.
         if ( !tinymceOnInitDone ) {
             tinymceOnInitDone = true;
             // TODO: This is now done as the first editor instance completed init.
@@ -26,7 +40,7 @@
 
     var tinymceInit = function() {
         window.tinymce.init({
-            setup: function(ed) { ed.on('init', tinymceOnInit); },
+            setup: function(editor) { editor.on('init', tinymceOnInit); },
             inline: true,
             selector: '.step',
             theme: 'modern',

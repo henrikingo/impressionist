@@ -7,7 +7,7 @@
 (function ( document, window ) {
     'use strict';
     // Just load it ASAP. No need to wait for impressionist:init
-    var link = impressionist().util.loadCss(process.resourcesPath + "/../../../../css/impressionist.css");
+    var link = impressionist().util.loadCss(process.cwd() + "/css/impressionist.css");
     impressionist().gc.pushElement(link);
 
 })(document, window);

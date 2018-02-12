@@ -45,7 +45,7 @@ app.on('activate', function () {
 
 function loadImpressionist () {
     return `var script = document.createElement("script");
-    script.src = process.resourcesPath + "/../../../../js/impressionist.js";
+    script.src = process.cwd() + "/js/impressionist.js";
     script.type = "text/javascript";
     script.onload = function(){
         impressionist().gc.pushElement(script)

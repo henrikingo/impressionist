@@ -17,6 +17,7 @@ function createWindow () {
 
     // This triggers when user opens a presentation and it has loaded into the window
     mainWindow.webContents.on('dom-ready', function(event) {
+        console.log('dom ready')
         mainWindow.webContents.executeJavaScript(loadImpressionist())
     })
 
@@ -44,10 +45,13 @@ app.on('activate', function () {
 
 
 function loadImpressionist () {
-    return `var script = document.createElement("script");
-    script.src = process.resourcesPath + "/../../../../js/impressionist.js";
+    // consider to use process.resourcesPath on prod
+    return `var impresionistResourcesPath = '${__dirname}';
+    var script = document.createElement("script");
+    script.src = "${__dirname}/js/impressionist.js";
     script.type = "text/javascript";
     script.onload = function(){
+        impressionist().resourcesPath = '${__dirname}';
         impressionist().gc.pushElement(script)
         impressionist().util.triggerEvent(document, "impressionist:init", {})
     };

@@ -21,16 +21,8 @@ have to edit raw CSS and HTML.
 
 Pre-requisites: git, node 6.5+ and npm
 
-        git clone https://github.com/henrikingo/impressionist.git
+        git clone --recursive https://github.com/henrikingo/impressionist.git
         cd impressionist
-        git submodule init
-        git submodule update
-        
-        cd templates
-        git submodule init
-        git submodule update
-        cd ..
-        
         npm install
         npm start
 

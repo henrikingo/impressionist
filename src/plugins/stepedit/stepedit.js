@@ -170,28 +170,30 @@
     // Add new step after this one.
     // Copy all attributes of current step (including CSS classes, etc...). For position, copy camera coordinates.
     var newStep = function() {
-        var newStep = document.createElement("DIV");
+        var newStepElement = document.createElement("DIV");
         // Copy attributes of current step
         for (var i = 0; i < activeStep.attributes.length; i++) {
             var attrName = activeStep.attributes[i].name;
-            newStep.setAttribute( attrName, activeStep.getAttribute(attrName) );
+            newStepElement.setAttribute( attrName, activeStep.getAttribute(attrName) );
         }
         // Copy coordinates from camera
         cameraWidgetNames.forEach( function(namePair){
-            newStep.setAttribute(namePair[1], cameraWidgets[namePair[0]].input.value);
+            newStepElement.setAttribute(namePair[1], cameraWidgets[namePair[0]].input.value);
         });
-        newStep.id = generateStepId();
-        newStep.innerHTML = generateStepContent(steps.length+1);
+        newStepElement.id = generateStepId();
+        newStepElement.innerHTML = generateStepContent(steps.length+1);
 
         // Actually insert the element
         var nextElement = getNextStep(activeStep);
         if ( nextElement ) {
-            canvas.insertBefore( newStep, nextElement );
+            canvas.insertBefore( newStepElement, nextElement );
         }
         else {
-            canvas.appendChild( newStep );
+            canvas.appendChild( newStepElement );
         }
-        refresh(newStep.id);
+        refresh(newStepElement.id);
+        // Let others know that there's a new step
+        util.triggerEvent( newStepElement, "impressionist:stepedit:newStep", {} );
     };
 
     // Delete step

@@ -44,9 +44,13 @@ app.on('activate', function () {
 
 
 function loadImpressionist () {
-    return `var impressionistRoot = '${__dirname}';
+    var impressionistRoot = __dirname;
+    // Windows support
+    impressionistRoot = impressionistRoot.split("\\").join("/");
+
+    return `var impressionistRoot = '${impressionistRoot}';
     var script = document.createElement("script");
-    script.src = "${__dirname}/js/impressionist.js";
+    script.src = "${impressionistRoot}/js/impressionist.js";
     script.type = "text/javascript";
     script.onload = function(){
         impressionist().gc.pushElement(script)

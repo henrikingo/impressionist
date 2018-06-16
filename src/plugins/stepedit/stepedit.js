@@ -246,7 +246,7 @@
         up.addEventListener("click", function (event) {
             saveOldSelectedOptions();
             for (var i = 0; i < reorderSelect.selectedOptions.length; i++){
-                var id = reorderSelect.selectedOptions[i].id
+                var id = reorderSelect.selectedOptions[i].value;
                 var step = document.getElementById(id);
                 var ret = moveUp( step );
                 if ( ret === false ) {
@@ -260,7 +260,7 @@
         down.addEventListener("click", function (event) {
             saveOldSelectedOptions();
             for (var i = reorderSelect.selectedOptions.length - 1; i >= 0; i--){
-                var id = reorderSelect.selectedOptions[i].id
+                var id = reorderSelect.selectedOptions[i].value;
                 var step = document.getElementById(id);
                 var ret = moveDown( step );
                 if ( ret === false ) {
@@ -303,7 +303,7 @@
             var selectHTML = "";
             for( var i = 0; i < steps.length; i++) {
                 var s = steps[i];
-                selectHTML += '<option id="' + s.id + '">' + s.id + '</option>\n';
+                selectHTML += '<option value="' + s.id + '">' + s.id + '</option>\n';
             }
             reorderSelect.innerHTML = selectHTML;
             reorderSelectOptions( reorderOldSelectedOptions );

@@ -14,8 +14,8 @@ have to edit raw CSS and HTML.
 
 ## Demo
 
-* [Short](https://www.youtube.com/watch?v=OHG27IBeuHM&t=93s)
-* [17 minutes, narrated](https://www.youtube.com/watch?v=c07w0hsC4yQ&t=7s)
+* [Short](https://www.youtube.com/watch?v=OHG27IBeuHM)
+* [17 minutes, narrated](https://www.youtube.com/watch?v=c07w0hsC4yQ)
 
 ## HOWTO
 

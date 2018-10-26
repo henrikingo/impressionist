@@ -8,7 +8,7 @@ impress.js presentation into a proper desktop app that can open and save files.
 capability.
 
 Current status is that you can open a presentations (such as the ones under
-[templates/](templates/)) then move, add or remove slides and edit their contents with TinyMCE. You
+[templates/](https://github.com/henrikingo/impressionist-templates)) then move, add or remove slides and edit their contents with TinyMCE. You
 can't really modify the style of slides, or have different kinds of slides. For that you'd still
 have to edit raw CSS and HTML.
 

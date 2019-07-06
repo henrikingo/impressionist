@@ -44,7 +44,7 @@
     var tinymceOptionsTemplate = {
         setup: function(editor) { editor.on('init', tinymceOnInit); },
         inline: true,
-        theme: 'modern',
+        theme: 'silver',
         width: 780,
         height: 550,
         menubar: false,
@@ -60,7 +60,7 @@
         plugins: [
         'advlist autolink link image lists charmap print preview hr anchor pagebreak spellchecker',
         'searchreplace wordcount visualblocks visualchars code fullscreen insertdatetime media nonbreaking',
-        'save table contextmenu directionality emoticons template paste textcolor'
+        'save table directionality emoticons template paste'
         ]
     };
 

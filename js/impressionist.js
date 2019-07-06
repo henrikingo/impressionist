@@ -1056,7 +1056,7 @@
             // Aaannd then we reload impress and put the impressionist bits right back to where they were
             impress().init();
             var script = impressionist().util.loadJavaScript(
-                process.resourcesPath + "/../../../../js/impressionist.js", function(){
+                impressionist().rootDir + "/js/impressionist.js", function(){
                     impressionist().gc.pushElement(script); // The circle of life :-)
                     impressionist().util.triggerEvent(document, "impressionist:init", {}) 
                 });
@@ -1107,9 +1107,10 @@
  */
 (function ( document, window ) {
     'use strict';
-    // Just load it ASAP. No need to wait for impressionist:init
-    var link = impressionist().util.loadCss(process.resourcesPath + "/../../../../css/impressionist.css");
-    impressionist().gc.pushElement(link);
+    impressionist().gc.addEventListener(document, "impressionist:init", function (event) {
+        var link = impressionist().util.loadCss(impressionist().rootDir + "/css/impressionist.css");
+        impressionist().gc.pushElement(link);
+    });
 
 })(document, window);
 
@@ -1564,7 +1565,7 @@
         var html = '<div id="tinymce-toolbar"></div>';
         toolbar = impressionist().util.makeDomElement(html);
         gc.appendChild(document.body, toolbar);
-        script = impressionist().util.loadJavaScript(process.resourcesPath + "/../../../tinymce/tinymce.js", tinymceInit);
+        script = impressionist().util.loadJavaScript(impressionist().rootDir + "/node_modules/tinymce/tinymce.js", tinymceInit);
         impressionist().gc.pushElement(script);
     });
 

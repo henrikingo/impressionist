@@ -19,7 +19,7 @@ have to edit raw CSS and HTML.
 
 ## HOWTO
 
-Pre-requisites: git, node 6.5+ and npm
+Pre-requisites: git, node 6.5+ and npm 5+
 
         git clone --recursive https://github.com/henrikingo/impressionist.git
         cd impressionist

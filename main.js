@@ -15,7 +15,7 @@ function createWindow () {
     })
     mainWindow.maximize()
     // debug
-    //mainWindow.webContents.openDevTools()
+    mainWindow.webContents.openDevTools()
 
     // This triggers when user opens a presentation and it has loaded into the window
     mainWindow.webContents.on('dom-ready', function(event) {
@@ -50,13 +50,13 @@ function loadImpressionist () {
     // Windows support
     impressionistRoot = impressionistRoot.split("\\").join("/");
 
-    return `var impressionistRoot = '${impressionistRoot}';
-    var script = document.createElement("script");
+    return `var script = document.createElement("script");
     script.src = "${impressionistRoot}/js/impressionist.js";
     script.type = "text/javascript";
     script.onload = function(){
-        impressionist().gc.pushElement(script)
-        impressionist().util.triggerEvent(document, "impressionist:init", {})
+        impressionist().rootDir = '${impressionistRoot}';
+        impressionist().gc.pushElement(script);
+        impressionist().util.triggerEvent(document, "impressionist:init", {});
     };
     document.head.appendChild(script);
     `

@@ -10,7 +10,7 @@
     'use strict';
 
     if( impressionist().util === undefined ){
-        impressionist().util = {}
+        impressionist().util = {};
     }
 
     impressionist().util.capitalize = function( str ) {
@@ -65,4 +65,33 @@
         return link;
     };
     
+
+    impressionist().util.getSelectValues = function (select) {
+        var result = [];
+        var options = select.options;
+
+        for (var i=0; i < options.length; i++) {
+            if (options[i].selected) {
+                result.push(options[i].value);
+            }
+        }
+        return result;
+    };
+
+    if( impressionist().util.array === undefined ){
+        impressionist().util.array = {};
+    }
+
+    impressionist().util.array.intersection = function (a, b) {
+        return a.filter(function(value) { 
+            return b.indexOf(value) > -1;
+        });
+    };
+
+    impressionist().util.array.minus = function (a, b) {
+        return a.filter(function(value) { 
+            return b.indexOf(value) == -1;
+        });
+    };
+
 })(document, window);

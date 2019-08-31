@@ -16,11 +16,12 @@ buildify()
            'src/plugins/electron/electron.js',
            'src/plugins/loadcss/loadcss.js',
            'src/plugins/stepedit/stepedit.js',
+           'src/plugins/stepstyles/stepstyles.js',
            'src/plugins/tinymce/tinymce.js',
            'src/plugins/toolbar/toolbar.js'])
   .save('js/impressionist.js')
-  .uglify()
-  .save('js/impressionist.min.js');
+//  .uglify()
+//  .save('js/impressionist.min.js');
 
 
 buildify()
@@ -30,6 +31,7 @@ buildify()
            'src/plugins/camera/camera.css',
            'src/plugins/cameracontrols/cameracontrols.css',
            'src/plugins/stepedit/stepedit.css',
+           'src/plugins/stepstyles/stepstyles.css',
            'src/plugins/tinymce/tinymce.css',
            'src/plugins/toolbar/toolbar.css'])
   .save('css/impressionist.css');

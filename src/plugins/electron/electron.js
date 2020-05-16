@@ -13,6 +13,7 @@
     if( window.require ){
         var getDocumentElement = function (event, filename) {
             // Remove DOM elements added by impressionist itself (toolbars, tinymce)
+            const rootDir = impressionist().rootDir
             impressionist().gc.removeAll();
             impress().tear();
             trimLastChild();
@@ -26,6 +27,7 @@
             impress().init();
             var script = impressionist().util.loadJavaScript(
                 impressionist().rootDir + "/js/impressionist.js", function(){
+                    impressionist().rootDir = rootDir;
                     impressionist().gc.pushElement(script); // The circle of life :-)
                     impressionist().util.triggerEvent(document, "impressionist:init", {}) 
                 });

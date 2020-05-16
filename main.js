@@ -10,9 +10,7 @@ let mainWindow
 function createWindow () {
     // Create the browser window.
     mainWindow = new BrowserWindow({useContentSize: true,
-                                    icon: './favicon.png',
-                                    webPreferences: { nodeIntegration: true }
-    })
+                                    icon: './favicon.png'})
     mainWindow.maximize()
     // debug
     // mainWindow.webContents.openDevTools()

@@ -34,6 +34,6 @@
   },
   "devDependencies": {
     "buildify": "0.4.0",
-    "electron": "1.4.4"
+    "electron": "7.2.4"
   }
 }

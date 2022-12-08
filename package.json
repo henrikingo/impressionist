@@ -30,7 +30,7 @@
     "start": "electron ."
   },
   "dependencies": {
-    "tinymce": "4.4.3"
+    "tinymce": "5.10.7"
   },
   "devDependencies": {
     "buildify": "0.4.0",
